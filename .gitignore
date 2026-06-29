@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+
+# Environment — NEVER commit real credentials
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+.expo/
+*.tsbuildinfo
+
+# Prisma generated
+backend/src/generated/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Expo
+origo-app/.expo/
+origo-app/android/
+origo-app/ios/
+
+# Uploads / temp
+uploads/
+tmp/

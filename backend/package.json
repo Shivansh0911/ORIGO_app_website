@@ -1,0 +1,52 @@
+{
+  "name": "origo-backend",
+  "version": "1.0.0",
+  "description": "Origo campus social app backend",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:seed": "ts-node prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-rekognition": "^3.0.0",
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@prisma/client": "^5.0.0",
+    "bad-words": "^3.0.4",
+    "bcrypt": "^5.1.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.0.0",
+    "helmet": "^7.0.0",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.0",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.2",
+    "prisma": "^5.0.0",
+    "rate-limit-redis": "^4.0.0",
+    "razorpay": "^2.9.0",
+    "resend": "^1.0.0",
+    "socket.io": "^4.6.0",
+    "zod": "^3.22.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.0",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/jsonwebtoken": "^9.0.2",
+    "@types/multer": "^1.4.7",
+    "@types/node": "^20.0.0",
+    "@types/node-cron": "^3.0.8",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.0.0"
+  }
+}
