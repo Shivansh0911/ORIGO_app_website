@@ -156,6 +156,7 @@ All endpoints are prefixed `/v1/`.
 | Communities | `/communities` | list, join, posts, likes, comments |
 | Notifications | `/notifications` | list, mark-read, unread count |
 | Payments | `/payments` | Razorpay order creation & webhook verify |
+| Ships | `/ships` | create anonymous ship, my ships, eligible targets |
 
 ---
 
@@ -198,6 +199,15 @@ Key models in `backend/prisma/schema.prisma`:
 - [ ] Configure Razorpay webhook URL → `POST /v1/payments/webhook`
 - [ ] Add FCM server key + Expo project ID for push notifications
 - [ ] Set up Redis (Upstash recommended for serverless-friendly billing)
+
+---
+
+## Contributors
+
+| Name | Role |
+|---|---|
+| **Shivansh Shekher Ojha** | Founder & Lead Developer |
+| Claude Sonnet (Anthropic) | AI Development Partner |
 
 ---
 
