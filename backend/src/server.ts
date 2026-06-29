@@ -17,6 +17,7 @@ import matchesRoutes from './routes/matches.routes';
 import communitiesRoutes from './routes/communities.routes';
 import notificationsRoutes from './routes/notifications.routes';
 import paymentsRoutes from './routes/payments.routes';
+import shipsRoutes from './routes/ships.routes';
 
 const app = express();
 const httpServer = createServer(app);
@@ -38,6 +39,7 @@ app.use('/v1/matches', matchesRoutes);
 app.use('/v1/communities', communitiesRoutes);
 app.use('/v1/notifications', notificationsRoutes);
 app.use('/v1/payments', paymentsRoutes);
+app.use('/v1/ships', shipsRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
 

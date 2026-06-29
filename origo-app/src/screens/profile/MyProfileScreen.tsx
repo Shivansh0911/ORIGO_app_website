@@ -73,6 +73,9 @@ export default function MyProfileScreen() {
             <Text style={styles.premiumBtnText}>✨ Premium</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity style={styles.shipBtn} onPress={() => navigation.navigate('ShipAFriend')}>
+          <Text style={styles.shipBtnText}>💕 Ship a Friend — ₹19</Text>
+        </TouchableOpacity>
 
         {/* Looking For */}
         {user.lookingFor?.length > 0 && (
@@ -141,6 +144,8 @@ const styles = StyleSheet.create({
   lfPillText: { color: colors.textSecondary, fontSize: 13 },
   interestPill: { backgroundColor: 'rgba(108,61,255,0.15)', borderRadius: radius.full, paddingHorizontal: 12, paddingVertical: 6 },
   interestPillText: { color: colors.primaryLight, fontSize: 13 },
+  shipBtn: { marginHorizontal: spacing.lg, marginBottom: spacing.md, backgroundColor: 'rgba(255,107,157,0.15)', borderWidth: 1, borderColor: colors.accent, borderRadius: radius.full, paddingVertical: 10, alignItems: 'center' },
+  shipBtnText: { color: colors.accent, fontWeight: '600', fontSize: 14 },
   signOutBtn: { marginHorizontal: spacing.lg, marginTop: spacing.xl, borderWidth: 1, borderColor: colors.error, borderRadius: radius.full, paddingVertical: 12, alignItems: 'center' },
   signOutText: { color: colors.error, fontWeight: '600', fontSize: 14 },
 });

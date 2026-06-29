@@ -34,6 +34,7 @@ import MyProfileScreen from '../screens/profile/MyProfileScreen';
 import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import PremiumScreen from '../screens/profile/PremiumScreen';
 import SettingsScreen from '../screens/profile/SettingsScreen';
+import ShipAFriendScreen from '../screens/profile/ShipAFriendScreen';
 
 const Tab = createBottomTabNavigator<MainTabParams>();
 const DiscoverStack = createStackNavigator<DiscoverStackParams>();
@@ -93,6 +94,7 @@ function ProfileNavigator() {
       <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} />
       <ProfileStack.Screen name="Premium" component={PremiumScreen} />
       <ProfileStack.Screen name="Settings" component={SettingsScreen} />
+      <ProfileStack.Screen name="ShipAFriend" component={ShipAFriendScreen} />
     </ProfileStack.Navigator>
   );
 }

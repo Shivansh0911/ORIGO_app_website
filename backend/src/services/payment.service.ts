@@ -83,4 +83,57 @@ export const PaymentService = {
     await prisma.profileBoost.create({ data: { userId, expiresAt, razorpayOrderId: orderId } });
     return { message: 'Boost activated', expiresAt };
   },
+
+  // IAP: Ship a Friend — ₹19 per ship
+  async createShipOrder(userId: string) {
+    const order = await razorpayRequest('/orders', {
+      amount: 1900,
+      currency: 'INR',
+      receipt: `ship_${userId}_${Date.now()}`,
+    }) as { id: string };
+    return { orderId: order.id, amount: 1900, item: 'ship', keyId: RAZORPAY_KEY_ID };
+  },
+
+  async verifyShipOrder(orderId: string, paymentId: string, signature: string) {
+    if (!verifySignature(orderId, paymentId, signature)) throw new Error('INVALID_SIGNATURE');
+    return { verified: true };
+  },
+
+  // IAP: Sticker Pack — ₹29 basic / ₹49 premium
+  async createStickerOrder(userId: string, packId: string) {
+    const prices: Record<string, number> = { basic: 2900, premium: 4900 };
+    const amount = prices[packId] ?? 2900;
+    const order = await razorpayRequest('/orders', {
+      amount,
+      currency: 'INR',
+      receipt: `sticker_${userId}_${packId}_${Date.now()}`,
+    }) as { id: string };
+    return { orderId: order.id, amount, item: 'sticker', packId, keyId: RAZORPAY_KEY_ID };
+  },
+
+  // IAP: Rizz Pack (curated openers) — ₹39
+  async createRizzPackOrder(userId: string) {
+    const order = await razorpayRequest('/orders', {
+      amount: 3900,
+      currency: 'INR',
+      receipt: `rizzpack_${userId}_${Date.now()}`,
+    }) as { id: string };
+    return { orderId: order.id, amount: 3900, item: 'rizz_pack', keyId: RAZORPAY_KEY_ID };
+  },
+
+  // IAP: See Who Shipped You — ₹9
+  async createViewShipsOrder(userId: string) {
+    const order = await razorpayRequest('/orders', {
+      amount: 900,
+      currency: 'INR',
+      receipt: `viewships_${userId}_${Date.now()}`,
+    }) as { id: string };
+    return { orderId: order.id, amount: 900, item: 'view_ships', keyId: RAZORPAY_KEY_ID };
+  },
+
+  // Generic IAP verify (for items that just need payment confirmed)
+  async verifyIap(orderId: string, paymentId: string, signature: string) {
+    if (!verifySignature(orderId, paymentId, signature)) throw new Error('INVALID_SIGNATURE');
+    return { verified: true, paymentId };
+  },
 };

@@ -38,6 +38,7 @@ export type ProfileStackParams = {
   EditProfile: undefined;
   Premium: undefined;
   Settings: undefined;
+  ShipAFriend: undefined;
 };
 
 export type MainTabParams = {
