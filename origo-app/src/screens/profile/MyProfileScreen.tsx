@@ -4,8 +4,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { ProfileStackParams } from '../../navigation/types';
 import { useAuthStore } from '../../store/authStore';
 import { colors, spacing, radius } from '../../theme';
+
+type Nav = StackNavigationProp<ProfileStackParams, 'MyProfile'>;
 
 const LOOKING_FOR_LABELS: Record<string, string> = {
   FRIENDS: '🤝 Friends',
@@ -15,7 +19,7 @@ const LOOKING_FOR_LABELS: Record<string, string> = {
 };
 
 export default function MyProfileScreen() {
-  const navigation = useNavigation<{ navigate: (screen: string) => void }>();
+  const navigation = useNavigation<Nav>();
   const { user, clearAuth } = useAuthStore();
 
   if (!user) return null;
@@ -25,7 +29,7 @@ export default function MyProfileScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Profile</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Settings' as never)}>
+        <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
           <Text style={styles.settingsIcon}>⚙️</Text>
         </TouchableOpacity>
       </View>
@@ -62,10 +66,10 @@ export default function MyProfileScreen() {
 
         {/* Action buttons */}
         <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditProfile' as never)}>
+          <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditProfile')}>
             <Text style={styles.editBtnText}>Edit Profile</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.premiumBtn} onPress={() => navigation.navigate('Premium' as never)}>
+          <TouchableOpacity style={styles.premiumBtn} onPress={() => navigation.navigate('Premium')}>
             <Text style={styles.premiumBtnText}>✨ Premium</Text>
           </TouchableOpacity>
         </View>

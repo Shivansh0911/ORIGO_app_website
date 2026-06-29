@@ -26,6 +26,13 @@ export type MessagesStackParams = {
   Chat: { conversationId: string; otherUser: User };
 };
 
+export type CommunitiesStackParams = {
+  CommunitiesList: undefined;
+  CommunityDetail: { communityId: string };
+  PostComposer: { communityId: string };
+  EventDetail: { eventId: string };
+};
+
 export type ProfileStackParams = {
   MyProfile: undefined;
   EditProfile: undefined;
@@ -35,7 +42,7 @@ export type ProfileStackParams = {
 
 export type MainTabParams = {
   Discover: NavigatorScreenParams<DiscoverStackParams>;
-  Communities: undefined;
+  Communities: NavigatorScreenParams<CommunitiesStackParams>;
   Rizz: NavigatorScreenParams<RizzStackParams>;
   Messages: NavigatorScreenParams<MessagesStackParams>;
   Profile: NavigatorScreenParams<ProfileStackParams>;

@@ -4,9 +4,14 @@ import {
   StyleSheet, ActivityIndicator, ScrollView, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { CommunitiesStackParams } from '../../navigation/types';
 import { colors, spacing, radius } from '../../theme';
 import { apiClient } from '../../api/client';
+
+type Nav = StackNavigationProp<CommunitiesStackParams, 'CommunitiesList'>;
 
 interface Community {
   id: string;
@@ -21,6 +26,7 @@ interface Community {
 const FILTERS = ['All', 'TECH', 'ARTS', 'SPORTS', 'MUSIC', 'GAMING', 'FOOD', 'TRAVEL', 'ACADEMIA', 'SOCIAL'];
 
 export default function CommunitiesListScreen() {
+  const navigation = useNavigation<Nav>();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const queryClient = useQueryClient();
@@ -112,7 +118,11 @@ export default function CommunitiesListScreen() {
           renderItem={({ item }) => {
             const isMember = item.members.length > 0;
             return (
-              <View style={styles.card}>
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => navigation.navigate('CommunityDetail', { communityId: item.id })}
+                activeOpacity={0.8}
+              >
                 <View style={styles.cardAvatar}>
                   {item.imageUrl ? (
                     <Image source={{ uri: item.imageUrl }} style={styles.cardAvatarImg} />
@@ -142,7 +152,7 @@ export default function CommunitiesListScreen() {
                     {isMember ? 'Joined' : 'Join'}
                   </Text>
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             );
           }}
           ListEmptyComponent={
