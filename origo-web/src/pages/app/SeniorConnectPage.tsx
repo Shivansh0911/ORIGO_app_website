@@ -2,6 +2,7 @@ import { MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useFreshersStore } from '../../store/freshersStore';
 import { SENIORS } from '../../lib/freshers/content';
+import { track } from '../../lib/telemetry';
 
 export default function SeniorConnectPage() {
   const completeQuest = useFreshersStore((s) => s.completeQuest);
@@ -37,7 +38,7 @@ export default function SeniorConnectPage() {
                   ))}
                 </div>
                 <button
-                  onClick={() => { completeQuest('senior'); toast.success(`Question sent to ${s.name.split(' ')[0]} 🧭`); }}
+                  onClick={() => { completeQuest('senior'); track('quest_completed', { questId: 'senior' }); toast.success(`Question sent to ${s.name.split(' ')[0]} 🧭`); }}
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary-light transition-colors"
                 >
                   <MessageCircle size={15} /> Ask a question

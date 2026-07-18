@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { happeningFeed, type HappeningItem } from '../../lib/freshers/content';
+import { track } from '../../lib/telemetry';
 
 /**
  * "Happening Around You" — a horizontally-scrolling banner carousel of campus
@@ -14,7 +15,7 @@ function Card({ item }: { item: HappeningItem }) {
   const sponsored = item.kind === 'sponsored';
   return (
     <button
-      onClick={() => item.to && navigate(item.to)}
+      onClick={() => { track('happening_click', { id: item.id, kind: item.kind }); if (item.to) navigate(item.to); }}
       className="relative shrink-0 w-[280px] text-left rounded-2xl border border-border bg-card overflow-hidden p-5 hover:border-primary/40 transition-colors snap-start"
       style={{ boxShadow: `0 0 0 rgba(0,0,0,0)` }}
     >

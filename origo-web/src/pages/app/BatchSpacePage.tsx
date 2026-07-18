@@ -2,6 +2,7 @@ import { MessageSquare, Users, MapPin, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useFreshersStore } from '../../store/freshersStore';
 import { BATCH_INFO } from '../../lib/freshers/content';
+import { track } from '../../lib/telemetry';
 
 export default function BatchSpacePage() {
   const { batchJoined, joinBatch } = useFreshersStore();
@@ -23,7 +24,7 @@ export default function BatchSpacePage() {
 
       {!batchJoined ? (
         <button
-          onClick={() => { joinBatch(); toast.success("Welcome to the Batch of '30 🎓"); }}
+          onClick={() => { joinBatch(); track('batch_joined'); track('quest_completed', { questId: 'batch' }); toast.success("Welcome to the Batch of '30 🎓"); }}
           className="w-full py-3.5 rounded-xl bg-primary hover:bg-primary-light text-white font-semibold transition-colors mb-6"
         >
           Join your batch space

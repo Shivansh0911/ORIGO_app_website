@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useFreshersStore, type PromMode } from '../../store/freshersStore';
 import { PROM_INFO } from '../../lib/freshers/content';
 import { rankCandidates, compatibilityBand, type Viewer } from '../../lib/matching';
+import { track } from '../../lib/telemetry';
 import Avatar from '../../components/ui/Avatar';
 import Spinner from '../../components/ui/Spinner';
 
@@ -89,7 +90,7 @@ export default function PromRadarPage() {
           />
 
           <button
-            onClick={() => { setProm({ optIn: true }); toast.success("You're on the Radar 💃"); }}
+            onClick={() => { setProm({ optIn: true }); track('prom_opt_in', { mode: promMode }); toast.success("You're on the Radar 💃"); }}
             className="w-full py-3.5 rounded-xl bg-primary hover:bg-primary-light text-white font-semibold transition-colors"
           >
             Opt in to Prom Radar
@@ -111,7 +112,7 @@ export default function PromRadarPage() {
               </p>
             </div>
             <button
-              onClick={() => { setProm({ optIn: false }); toast('Opted out of Prom Radar', { icon: '👋' }); }}
+              onClick={() => { setProm({ optIn: false }); track('prom_opt_out'); toast('Opted out of Prom Radar', { icon: '👋' }); }}
               className="text-xs text-text-muted hover:text-red-400 transition-colors"
             >
               Opt out

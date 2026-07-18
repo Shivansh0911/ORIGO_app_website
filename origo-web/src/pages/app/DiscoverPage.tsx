@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, X, Zap, GraduationCap, Sparkles, ChevronDown } from 'lucide-react';
@@ -9,6 +9,7 @@ import {
   rankCandidates, primaryIntent, compatibilityBand,
   type Intent, type ScoredUser, type Viewer, type CommunityRef,
 } from '../../lib/matching';
+import { track } from '../../lib/telemetry';
 import Spinner from '../../components/ui/Spinner';
 import EmptyState from '../../components/ui/EmptyState';
 
@@ -229,15 +230,33 @@ export default function DiscoverPage() {
     onError: () => toast.error('Could not start Rizz session'),
   });
 
+  // Log the profile currently on top of the stack (a training impression).
+  useEffect(() => {
+    if (current) track('discover_impression', { candidateId: current.id, intent, score: current.compatibilityScore });
+  }, [current?.id, intent]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const advance = () => {
     if (!current) return;
     setSeen((prev) => new Set([...prev, current.id]));
     if (unseen.length <= 2) setPage((p) => p + 1);
   };
 
-  const handleLike = () => { if (current) { matchMutation.mutate(current.id); advance(); } };
-  const handleRizz = () => { if (current) { rizzMutation.mutate(current.id); advance(); } };
-  const handlePass = () => advance();
+  const handleLike = () => {
+    if (!current) return;
+    track('discover_like', { candidateId: current.id, intent, score: current.compatibilityScore });
+    matchMutation.mutate(current.id);
+    advance();
+  };
+  const handleRizz = () => {
+    if (!current) return;
+    track('discover_rizz_start', { candidateId: current.id, intent, score: current.compatibilityScore });
+    rizzMutation.mutate(current.id);
+    advance();
+  };
+  const handlePass = () => {
+    if (current) track('discover_pass', { candidateId: current.id, intent, score: current.compatibilityScore });
+    advance();
+  };
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-full"><Spinner size="lg" /></div>
@@ -257,7 +276,7 @@ export default function DiscoverPage() {
           {INTENTS.map((it) => (
             <button
               key={it.key}
-              onClick={() => { setIntent(it.key); setSeen(new Set()); setPage(1); }}
+              onClick={() => { setIntent(it.key); setSeen(new Set()); setPage(1); track('discover_intent_change', { intent: it.key }); }}
               className={`shrink-0 text-sm px-3 py-1.5 rounded-full border transition-colors ${
                 intent === it.key
                   ? 'bg-primary text-white border-primary'

@@ -8,6 +8,7 @@ import {
   CARD_THEMES, type CardFormat, type CardTheme, type IntroCardData,
 } from '../../lib/introCard';
 import { ICEBREAKER_PROMPTS } from '../../lib/freshers/content';
+import { track } from '../../lib/telemetry';
 
 const APP_ORIGIN = typeof window !== 'undefined' ? window.location.origin : 'https://origo.app';
 
@@ -74,13 +75,14 @@ export default function IntroCardPage() {
     if (!dataUrl || !user) return;
     downloadDataUrl(dataUrl, `${user.username}-origo-card.png`);
     completeQuest('intro-card');
+    track('intro_card_created', { format, theme: theme.id });
     toast.success('Card downloaded — go post it! 🎴');
   };
 
   const handleShare = async () => {
     if (!dataUrl || !cardData) return;
     const ok = await shareCard(dataUrl, cardData);
-    if (ok) { completeQuest('intro-card'); }
+    if (ok) { completeQuest('intro-card'); track('intro_card_shared', { format, theme: theme.id }); }
     else toast('Sharing not supported here — use Download instead', { icon: 'ℹ️' });
   };
 
