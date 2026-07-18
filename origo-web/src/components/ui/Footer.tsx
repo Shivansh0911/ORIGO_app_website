@@ -39,7 +39,7 @@ export default function Footer() {
             <h4 className="text-white font-semibold mb-4 font-poppins">Company</h4>
             <div className="flex flex-col gap-2">
               <Link to="/about" className="text-text-secondary text-sm hover:text-white transition-colors">About</Link>
-              <a href="#" className="text-text-secondary text-sm hover:text-white transition-colors">Privacy Policy</a>
+              <Link to="/privacy" className="text-text-secondary text-sm hover:text-white transition-colors">Privacy Policy</Link>
               <a href="#" className="text-text-secondary text-sm hover:text-white transition-colors">Terms of Service</a>
               <a href="#" className="text-text-secondary text-sm hover:text-white transition-colors">Contact</a>
             </div>

@@ -17,6 +17,8 @@ import LandingPage from './pages/LandingPage';
 import FeaturesPage from './pages/FeaturesPage';
 import AboutPage from './pages/AboutPage';
 import DownloadPage from './pages/DownloadPage';
+import PrivacyPage from './pages/PrivacyPage';
+import ConsentBanner from './components/consent/ConsentBanner';
 
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
@@ -106,12 +108,14 @@ export default function App() {
   }, [isAuthenticated, setUnreadCount]);
 
   return (
+    <>
     <Routes>
       {/* Landing / marketing site */}
       <Route path="/" element={<><Navbar /><LandingPage /><Footer /></>} />
       <Route path="/features" element={<><Navbar /><FeaturesPage /><Footer /></>} />
       <Route path="/about" element={<><Navbar /><AboutPage /><Footer /></>} />
       <Route path="/download" element={<><Navbar /><DownloadPage /><Footer /></>} />
+      <Route path="/privacy" element={<><Navbar /><PrivacyPage /><Footer /></>} />
 
       {/* Auth flow */}
       <Route path="/login" element={<LoginPage />} />
@@ -128,5 +132,7 @@ export default function App() {
       {/* Redirect root to app if already logged in */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    <ConsentBanner />
+    </>
   );
 }
