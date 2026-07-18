@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Compass, Zap, MessageCircle, Users, User, Bell, LogOut } from 'lucide-react';
+import { Compass, Zap, MessageCircle, Users, User, Bell, LogOut, GraduationCap } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useSocketStore } from '../../store/socketStore';
@@ -7,6 +7,7 @@ import { authApi } from '../../api/endpoints';
 import Avatar from '../ui/Avatar';
 
 const NAV = [
+  { to: '/app/freshers', icon: GraduationCap, label: 'Freshers HQ', highlight: true },
   { to: '/app/discover', icon: Compass, label: 'Discover' },
   { to: '/app/rizz', icon: Zap, label: 'Rizz In 5' },
   { to: '/app/messages', icon: MessageCircle, label: 'Messages' },
@@ -41,7 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Nav links */}
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {NAV.map(({ to, icon: Icon, label }) => (
+          {NAV.map(({ to, icon: Icon, label, highlight }) => (
             <NavLink
               key={to}
               to={to}
@@ -49,11 +50,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                 ${isActive
                   ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                  : 'text-text-secondary hover:bg-white/5 hover:text-white'}`
+                  : highlight
+                    ? 'text-accent hover:bg-accent/10'
+                    : 'text-text-secondary hover:bg-white/5 hover:text-white'}`
               }
             >
               <Icon size={18} />
               {label}
+              {highlight && (
+                <span className="ml-auto bg-accent/20 text-accent text-[10px] font-semibold rounded-full px-1.5 py-0.5">
+                  NEW
+                </span>
+              )}
               {label === 'Messages' && unread > 0 && (
                 <span className="ml-auto bg-accent text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
                   {unread > 99 ? '99+' : unread}

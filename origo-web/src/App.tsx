@@ -42,11 +42,25 @@ import SettingsPage from './pages/app/SettingsPage';
 import ShipAFriendPage from './pages/app/ShipAFriendPage';
 import NotificationsPage from './pages/app/NotificationsPage';
 
+// Freshers-season pages
+import FreshersPage from './pages/app/FreshersPage';
+import IntroCardPage from './pages/app/IntroCardPage';
+import PromRadarPage from './pages/app/PromRadarPage';
+import BatchSpacePage from './pages/app/BatchSpacePage';
+import SeniorConnectPage from './pages/app/SeniorConnectPage';
+import WeMetPage from './pages/app/WeMetPage';
+
 function AppRoutes() {
   return (
     <ProtectedRoute>
       <AppLayout>
         <Routes>
+          <Route path="freshers" element={<FreshersPage />} />
+          <Route path="intro-card" element={<IntroCardPage />} />
+          <Route path="prom" element={<PromRadarPage />} />
+          <Route path="batch" element={<BatchSpacePage />} />
+          <Route path="seniors" element={<SeniorConnectPage />} />
+          <Route path="met" element={<WeMetPage />} />
           <Route path="discover" element={<DiscoverPage />} />
           <Route path="rizz" element={<RizzPage />} />
           <Route path="rizz/:sessionId" element={<RizzChatPage />} />
