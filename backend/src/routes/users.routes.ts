@@ -21,6 +21,11 @@ router.put('/me/interests', authMiddleware, async (req, res) => {
   } catch { res.status(400).json({ error: 'Failed to update interests' }); }
 });
 
+router.get('/interests', authMiddleware, async (_req, res) => {
+  try { res.json(await UserService.getAllInterests()); }
+  catch { res.status(500).json({ error: 'Failed to fetch interests' }); }
+});
+
 router.get('/:id', authMiddleware, async (req, res) => {
   try { res.json(await UserService.getPublicProfile(req.params['id']!, req.user!.userId)); }
   catch (e: unknown) {

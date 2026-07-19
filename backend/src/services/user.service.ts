@@ -73,4 +73,8 @@ export const UserService = {
     await prisma.user.update({ where: { id: userId }, data: { pushToken: token } });
     return { message: 'Token registered' };
   },
+
+  async getAllInterests() {
+    return prisma.interest.findMany({ orderBy: { category: 'asc' } });
+  },
 };
