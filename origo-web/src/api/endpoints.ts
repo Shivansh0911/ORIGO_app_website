@@ -8,7 +8,7 @@ import type {
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const authApi = {
   register: (body: { name: string; username: string; email: string; password: string; phone?: string }) =>
-    api.post<{ message: string; email: string }>('/auth/register', body),
+    api.post<LoginResponse>('/auth/register', body),
 
   verifyOtp: (body: { email: string; otp: string }) =>
     api.post<LoginResponse>('/auth/verify-otp', body),
@@ -17,10 +17,10 @@ export const authApi = {
     api.post<LoginResponse>('/auth/login', body),
 
   sendCollegeOtp: (body: { collegeEmail: string }) =>
-    api.post<{ message: string }>('/auth/college-otp', body),
+    api.post<{ message: string }>('/auth/verify-college-email', body),
 
   verifyCollegeOtp: (body: { collegeEmail: string; otp: string }) =>
-    api.post<{ message: string }>('/auth/verify-college', body),
+    api.post<{ message: string }>('/auth/confirm-college-otp', { otp: body.otp }),
 
   logout: () => api.post('/auth/logout'),
 

@@ -15,25 +15,59 @@ export const AuthService = {
     username: string;
     email: string;
     password: string;
-    dateOfBirth: string;
+    dateOfBirth?: string;
     ip: string;
     userAgent: string;
   }) {
-    const existing = await prisma.user.findFirst({
-      where: { OR: [{ email: data.email }, { username: data.username }] },
+    const emailLower = data.email.toLowerCase();
+    const usernameLower = data.username.toLowerCase();
+
+    // Check existing email
+    const existingEmailUser = await prisma.user.findUnique({
+      where: { email: emailLower },
     });
-    if (existing) {
-      throw new Error(existing.email === data.email ? 'EMAIL_TAKEN' : 'USERNAME_TAKEN');
+
+    if (existingEmailUser) {
+      if (!existingEmailUser.isVerified) {
+        // Unverified draft account: update credentials and resume signup flow
+        const passwordHash = await bcrypt.hash(data.password, 12);
+        const user = await prisma.user.update({
+          where: { id: existingEmailUser.id },
+          data: {
+            name: data.name,
+            username: usernameLower,
+            passwordHash,
+            dateOfBirth: data.dateOfBirth ? encrypt(data.dateOfBirth) : null,
+          },
+        });
+        return issueTokenPair(user.id, DEVICE_ID_DEFAULT);
+      }
+      throw new Error('EMAIL_TAKEN');
     }
+
+    // Check existing username
+    const existingUsernameUser = await prisma.user.findUnique({
+      where: { username: usernameLower },
+    });
+
+    if (existingUsernameUser) {
+      if (!existingUsernameUser.isVerified) {
+        // Reclaim username from abandoned unverified account
+        await prisma.user.delete({ where: { id: existingUsernameUser.id } });
+      } else {
+        throw new Error('USERNAME_TAKEN');
+      }
+    }
+
     const passwordHash = await bcrypt.hash(data.password, 12);
     const user = await prisma.$transaction(async (tx) => {
       const u = await tx.user.create({
         data: {
           name: data.name,
-          username: data.username.toLowerCase(),
-          email: data.email.toLowerCase(),
+          username: usernameLower,
+          email: emailLower,
           passwordHash,
-          dateOfBirth: encrypt(data.dateOfBirth),
+          dateOfBirth: data.dateOfBirth ? encrypt(data.dateOfBirth) : null,
         },
       });
       await tx.userPrivacy.create({ data: { userId: u.id } });
@@ -69,6 +103,9 @@ export const AuthService = {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await redis.set(`otp:${userId}`, otp, 'EX', 300);
     try {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`\n🔑 [DEV ONLY] Verification OTP for user ${userId} (${collegeEmail}) is: ${otp}\n`);
+      }
       await resend.emails.send({
         from: 'Origo <verify@origo.app>',
         to: [collegeEmail],
@@ -77,7 +114,11 @@ export const AuthService = {
       });
     } catch {
       // Log but don't throw — for dev
-      console.error('Email send failed');
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Email send failed. (See generated OTP in console above)');
+      } else {
+        console.error('Email send failed');
+      }
     }
     return { message: 'OTP sent' };
   },

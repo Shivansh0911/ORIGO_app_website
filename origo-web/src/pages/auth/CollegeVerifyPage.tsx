@@ -41,6 +41,19 @@ export default function CollegeVerifyPage() {
     }
   };
 
+  const resendOtp = async () => {
+    if (!collegeEmail) return;
+    setLoading(true);
+    try {
+      await authApi.sendCollegeOtp({ collegeEmail });
+      toast.success('New OTP sent to your college email!');
+    } catch (err: unknown) {
+      toast.error((err as { response?: { data?: { error?: string } } }).response?.data?.error ?? 'Failed to resend OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const skip = () => navigate('/interests');
 
   return (
@@ -80,6 +93,14 @@ export default function CollegeVerifyPage() {
           />
           <button type="submit" disabled={loading} className="w-full py-3 bg-primary hover:bg-primary-light text-white font-semibold rounded-xl transition-colors disabled:opacity-60">
             {loading ? 'Verifying…' : 'Verify College'}
+          </button>
+          <button
+            type="button"
+            onClick={resendOtp}
+            disabled={loading}
+            className="w-full text-center text-text-muted text-sm mt-2 hover:text-primary transition-colors"
+          >
+            Resend OTP code
           </button>
         </form>
       )}

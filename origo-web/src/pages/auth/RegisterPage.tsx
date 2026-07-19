@@ -18,17 +18,51 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.password !== form.confirm) { toast.error('Passwords do not match'); return; }
-    if (form.password.length < 8) { toast.error('Password must be at least 8 characters'); return; }
+    if (form.name.trim().length < 2 || form.name.length > 60) {
+      toast.error('Name must be between 2 and 60 characters');
+      return;
+    }
+    if (form.username.length < 3 || form.username.length > 20) {
+      toast.error('Username must be between 3 and 20 characters');
+      return;
+    }
+    if (!/^[a-z0-9_]+$/.test(form.username)) {
+      toast.error('Username must contain only lowercase letters, numbers, and underscores');
+      return;
+    }
+    if (form.password.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    if (!/[A-Z]/.test(form.password)) {
+      toast.error('Password must contain at least one uppercase letter');
+      return;
+    }
+    if (!/[0-9]/.test(form.password)) {
+      toast.error('Password must contain at least one number');
+      return;
+    }
+    if (form.password !== form.confirm) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
     setLoading(true);
     try {
-      await authApi.register({ name: form.name, username: form.username, email: form.email, password: form.password });
-      setOnboardingEmail(form.email);
-      toast.success('OTP sent to your email!');
-      navigate('/verify-otp');
+      const { data } = await authApi.register({ name: form.name, username: form.username, email: form.email, password: form.password });
+      setAuth(data.user, data.accessToken, data.refreshToken);
+      toast.success('Account created successfully!');
+      navigate('/verify-college');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
-      toast.error(msg ?? 'Registration failed. Try a different email/username.');
+      const resData = (err as { response?: { data?: { error?: string; fields?: Record<string, string[]> } } }).response?.data;
+      if (resData?.fields) {
+        const details = Object.entries(resData.fields)
+          .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
+          .join('\n');
+        toast.error(`Validation failed:\n${details}`);
+      } else {
+        toast.error(resData?.error ?? 'Registration failed. Try a different email/username.');
+      }
     } finally {
       setLoading(false);
     }

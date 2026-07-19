@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
+import { prisma } from '../utils/prisma';
 
 export const AuthController = {
   async register(req: Request, res: Response): Promise<void> {
@@ -9,7 +10,23 @@ export const AuthController = {
         ip: req.ip ?? 'unknown',
         userAgent: req.headers['user-agent'] ?? 'unknown',
       });
-      res.status(201).json(tokens);
+      
+      const fullUser = await prisma.user.findUnique({
+        where: { email: req.body.email.toLowerCase() },
+        include: {
+          interests: {
+            include: {
+              interest: true,
+            },
+          },
+        },
+      });
+      const { passwordHash, dateOfBirth, phone, collegeEmail, firebaseUid, pushToken, ...safeUser } = fullUser!;
+
+      res.status(201).json({
+        ...tokens,
+        user: safeUser,
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Registration failed';
       const status = ['EMAIL_TAKEN', 'USERNAME_TAKEN'].includes(msg) ? 409 : 400;
@@ -20,7 +37,23 @@ export const AuthController = {
   async login(req: Request, res: Response): Promise<void> {
     try {
       const { tokens, user } = await AuthService.login(req.body.email, req.body.password);
-      res.json({ ...tokens, userId: user.id });
+      
+      const fullUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        include: {
+          interests: {
+            include: {
+              interest: true,
+            },
+          },
+        },
+      });
+      const { passwordHash, dateOfBirth, phone, collegeEmail, firebaseUid, pushToken, ...safeUser } = fullUser!;
+
+      res.json({
+        ...tokens,
+        user: safeUser,
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Login failed';
       res.status(401).json({ error: msg });
