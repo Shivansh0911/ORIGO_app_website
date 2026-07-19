@@ -10,7 +10,7 @@ import { authApi } from '../../api/endpoints';
 export default function RegisterPage() {
   const [form, setForm] = useState({ name: '', username: '', email: '', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
-  const { setOnboardingEmail } = useAuthStore();
+  const { setAuth, setOnboardingEmail } = useAuthStore();
   const navigate = useNavigate();
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
