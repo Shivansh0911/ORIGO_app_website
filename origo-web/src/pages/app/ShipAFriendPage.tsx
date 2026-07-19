@@ -12,7 +12,6 @@ import Spinner from '../../components/ui/Spinner';
 declare const Razorpay: new (options: Record<string, unknown>) => { open(): void };
 
 export default function ShipAFriendPage() {
-  const [step, setStep] = useState<'pick' | 'confirm'>('pick');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [hint, setHint] = useState('');
   const [processing, setProcessing] = useState(false);
