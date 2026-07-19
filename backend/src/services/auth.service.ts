@@ -29,6 +29,19 @@ export const AuthService = {
 
     if (existingEmailUser) {
       if (!existingEmailUser.isVerified) {
+        // Check if the requested username belongs to someone else
+        const takenUsername = await prisma.user.findFirst({
+          where: { username: usernameLower, id: { not: existingEmailUser.id } },
+        });
+
+        if (takenUsername) {
+          if (!takenUsername.isVerified) {
+            await prisma.user.delete({ where: { id: takenUsername.id } });
+          } else {
+            throw new Error('USERNAME_TAKEN');
+          }
+        }
+
         // Unverified draft account: update credentials and resume signup flow
         const passwordHash = await bcrypt.hash(data.password, 12);
         const user = await prisma.user.update({

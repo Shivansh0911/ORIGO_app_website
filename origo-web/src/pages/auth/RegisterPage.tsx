@@ -60,8 +60,12 @@ export default function RegisterPage() {
           .map(([field, msgs]) => `${field}: ${msgs.join(', ')}`)
           .join('\n');
         toast.error(`Validation failed:\n${details}`);
+      } else if (resData?.error === 'EMAIL_TAKEN') {
+        toast.error('This email is already registered. Please sign in instead.');
+      } else if (resData?.error === 'USERNAME_TAKEN') {
+        toast.error('This username is already taken. Please choose another username.');
       } else {
-        toast.error(resData?.error ?? 'Registration failed. Try a different email/username.');
+        toast.error(resData?.error ?? 'Registration failed. Please check your details and try again.');
       }
     } finally {
       setLoading(false);
