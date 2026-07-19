@@ -62,7 +62,7 @@ export const usersApi = {
 // ── Discover ──────────────────────────────────────────────────────────────────
 export const discoverApi = {
   getPeople: (params?: { gender?: string; lookingFor?: string; page?: number }) =>
-    api.get<PublicUser[]>('/discover', { params }),
+    api.get<PublicUser[]>('/discover/people', { params }),
 };
 
 // ── Matches ───────────────────────────────────────────────────────────────────
