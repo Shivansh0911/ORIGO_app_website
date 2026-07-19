@@ -203,9 +203,9 @@ export default function DiscoverPage() {
     }));
     return {
       id: user.id,
-      collegeName: user.collegeName,
-      lookingFor: user.lookingFor,
-      interests: user.interests,
+      collegeName: user.collegeName ?? null,
+      lookingFor: user.lookingFor ?? [],
+      interests: user.interests ?? [],
       communities,
     };
   }, [user, myCommunities]);
@@ -267,8 +267,19 @@ export default function DiscoverPage() {
       <div className="px-6 py-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-xl font-bold text-text-primary">Discover</h1>
-            <p className="text-text-muted text-sm">Ranked for you · {INTENTS.find((i) => i.key === intent)?.label}</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-text-primary">Discover</h1>
+              {user?.collegeName ? (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-primary/15 text-primary border border-primary/30">
+                  <GraduationCap size={13} /> {user.collegeName}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-card border border-border text-text-secondary">
+                  🌐 All Campuses
+                </span>
+              )}
+            </div>
+            <p className="text-text-muted text-sm mt-1">Ranked for you · {INTENTS.find((i) => i.key === intent)?.label}</p>
           </div>
         </div>
         {/* Intent selector — each intent uses a different scoring profile */}

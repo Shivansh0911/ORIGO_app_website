@@ -136,30 +136,22 @@ export function jaccard<T>(a: Set<T>, b: Set<T>): number {
  * proper rarity/IDF weighting (which needs global interest frequencies — a
  * backend concern) but already beats flat Jaccard for surfacing niche overlap.
  */
-export function interestSimilarity(a: UserInterest[], b: UserInterest[]): number {
-  if (a.length === 0 || b.length === 0) return 0;
+export function interestSimilarity(a?: UserInterest[] | null, b?: UserInterest[] | null): number {
+  if (!a || !b || !Array.isArray(a) || !Array.isArray(b) || a.length === 0 || b.length === 0) return 0;
 
-  const aIds = new Set(a.map((i) => i.interestId));
-  const bIds = new Set(b.map((i) => i.interestId));
-  const aCats = new Set(a.map((i) => i.interest?.category).filter(Boolean));
-  const bCats = new Set(b.map((i) => i.interest?.category).filter(Boolean));
+  const aIds = new Set(a.map((i) => i?.interestId).filter(Boolean));
+  const bIds = new Set(b.map((i) => i?.interestId).filter(Boolean));
+  const aCats = new Set(a.map((i) => i?.interest?.category).filter(Boolean));
+  const bCats = new Set(b.map((i) => i?.interest?.category).filter(Boolean));
 
   const exact = jaccard(aIds, bIds);
   const category = jaccard(aCats, bCats);
 
-  // Exact matches dominate; category overlap is a soft bonus capped so it can
-  // never overpower a real shared-interest signal.
   return Math.min(1, exact * 0.8 + category * 0.2);
 }
 
-/**
- * Adamic–Adar index over shared communities: Σ 1 / ln(memberCount) for each
- * shared community. A shared *niche* community (small member count) is a much
- * stronger signal than sharing a 5,000-member catch-all. Result is squashed to
- * 0..1 with a soft saturation so one huge overlap does not peg the score.
- */
-export function adamicAdar(a: CommunityRef[], b: CommunityRef[]): number {
-  if (!a.length || !b.length) return 0;
+export function adamicAdar(a?: CommunityRef[] | null, b?: CommunityRef[] | null): number {
+  if (!a || !b || !Array.isArray(a) || !Array.isArray(b) || !a.length || !b.length) return 0;
   const byId = new Map(b.map((c) => [c.id, c]));
   let raw = 0;
   for (const c of a) {
@@ -169,11 +161,9 @@ export function adamicAdar(a: CommunityRef[], b: CommunityRef[]): number {
     raw += 1 / Math.log(n);
   }
   if (raw === 0) return 0;
-  // Soft saturation: raw of ~1.5 already maps to ~0.8.
   return 1 - Math.exp(-raw * 1.2);
 }
 
-/** Freshness boost — someone active in the last hour is worth more. 0..1. */
 export function recencyScore(lastSeen: string | null): number {
   if (!lastSeen) return 0;
   const hours = (Date.now() - new Date(lastSeen).getTime()) / 3_600_000;
@@ -184,29 +174,18 @@ export function recencyScore(lastSeen: string | null): number {
   return 0;
 }
 
-/** Profile-quality soft boost so filled-in cards float up. 0..1. */
-export function completenessScore(u: { bio: string | null; avatarUrl: string | null; interests: UserInterest[] }): number {
-  return (u.avatarUrl ? 0.5 : 0) + (u.bio ? 0.3 : 0) + (u.interests.length >= 3 ? 0.2 : 0);
+export function completenessScore(u: { bio?: string | null; avatarUrl?: string | null; interests?: UserInterest[] | null }): number {
+  return (u?.avatarUrl ? 0.5 : 0) + (u?.bio ? 0.3 : 0) + (((u?.interests?.length ?? 0) >= 3) ? 0.2 : 0);
 }
 
-/**
- * Directional reciprocity proxy: an *asymmetric* estimate of P(they respond to
- * me), because attraction/interest is not symmetric. Without behavioral history
- * we approximate it from structure:
- *   - do they list the active intent in lookingFor? (they're open to this)  →  gate
- *   - do our interests overlap? (they have a reason to reply)               →  scale
- * If the client has a real responsiveness signal, we blend it in.
- * Documented limitation: real reciprocity needs per-user response-rate history
- * from logged Rizz outcomes (Phase 1, backend).
- */
 export function reciprocityScore(
   me: Viewer,
   candidate: PublicUser,
   intent: Intent,
   ctx?: MatchContext,
 ): number {
-  const theyWantThis = candidate.lookingFor?.includes(intent) ? 1 : 0.35;
-  const mutualInterest = interestSimilarity(me.interests, candidate.interests);
+  const theyWantThis = candidate?.lookingFor?.includes(intent) ? 1 : 0.35;
+  const mutualInterest = interestSimilarity(me?.interests, candidate?.interests);
   const structural = theyWantThis * (0.4 + 0.6 * mutualInterest);
   if (ctx?.candidateResponsiveness != null) {
     return 0.5 * structural + 0.5 * ctx.candidateResponsiveness;
@@ -214,9 +193,8 @@ export function reciprocityScore(
   return structural;
 }
 
-/** Goal alignment: overlap of lookingFor arrays (symmetric, intent-agnostic). */
 export function goalScore(me: Viewer, candidate: PublicUser): number {
-  return jaccard(new Set(me.lookingFor), new Set(candidate.lookingFor ?? []));
+  return jaccard(new Set(me?.lookingFor ?? []), new Set(candidate?.lookingFor ?? []));
 }
 
 // ── Composite scoring ────────────────────────────────────────────────────────
