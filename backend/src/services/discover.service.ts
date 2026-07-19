@@ -61,8 +61,8 @@ export const DiscoverService = {
       privacy: { discoverableBy: { not: 'NOBODY' } },
     };
 
-    if (!me.isPremium) {
-      where.collegeName = me.collegeName ?? undefined;
+    if (!me.isPremium && me.collegeName) {
+      where.collegeName = me.collegeName;
     } else if (filters.collegeName) {
       where.collegeName = filters.collegeName;
     }
@@ -76,7 +76,7 @@ export const DiscoverService = {
     }
 
     // Fetch a wider pool (100) ordered by recency, then rank by vector score
-    const users = await prisma.user.findMany({
+    let users = await prisma.user.findMany({
       where,
       include: {
         interests: { include: { interest: true } },
@@ -86,6 +86,21 @@ export const DiscoverService = {
       take: 100,
       orderBy: { lastSeen: 'desc' },
     });
+
+    // Fallback: if no users found in exact college filter, show all active discoverable users
+    if (users.length === 0 && where.collegeName) {
+      delete where.collegeName;
+      users = await prisma.user.findMany({
+        where,
+        include: {
+          interests: { include: { interest: true } },
+          privacy: true,
+        },
+        skip: 0,
+        take: 100,
+        orderBy: { lastSeen: 'desc' },
+      });
+    }
 
     // Build my feature vectors once
     const myInterestVec = new Set(me.interests.map((i) => i.interestId));
