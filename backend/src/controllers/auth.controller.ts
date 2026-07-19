@@ -98,6 +98,23 @@ export const AuthController = {
     }
   },
 
+  async googleAuth(req: Request, res: Response): Promise<void> {
+    try {
+      const { idToken } = req.body as { idToken: string };
+      if (!idToken) { res.status(400).json({ error: 'idToken required' }); return; }
+      const { tokens, user } = await AuthService.googleAuth(
+        idToken,
+        req.ip ?? 'unknown',
+        req.headers['user-agent'] ?? 'unknown',
+      );
+      res.json({ ...tokens, userId: user.id, user });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Google auth failed';
+      const status = msg === 'ACCOUNT_DISABLED' ? 403 : msg.startsWith('INVALID') ? 401 : 400;
+      res.status(status).json({ error: msg });
+    }
+  },
+
   async deleteAccount(req: Request, res: Response): Promise<void> {
     try {
       await AuthService.deleteAccount(req.user!.userId);

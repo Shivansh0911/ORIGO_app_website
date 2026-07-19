@@ -10,6 +10,7 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 router.post('/register', authLimiter, validate(RegisterSchema), AuthController.register);
+router.post('/google', authLimiter, AuthController.googleAuth);
 router.post('/login', authLimiter, validate(LoginSchema), AuthController.login);
 router.post('/refresh', AuthController.refresh);
 router.post('/logout', authMiddleware, AuthController.logout);

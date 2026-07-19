@@ -4,8 +4,9 @@ import { Mail, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Input from '../../components/ui/Input';
+import GoogleButton from '../../components/ui/GoogleButton';
 import { useAuthStore } from '../../store/authStore';
-import { authApi, usersApi } from '../../api/endpoints';
+import { authApi } from '../../api/endpoints';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -23,10 +24,13 @@ export default function LoginPage() {
       setAuth(data.user, data.accessToken, data.refreshToken);
       navigate('/app/discover', { replace: true });
     } catch (err: unknown) {
-      console.error('Login error:', err);
       const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
-      const fallbackMsg = err instanceof Error ? err.message : 'Login failed. Check your credentials.';
-      toast.error(msg ?? fallbackMsg);
+      if (msg === 'GOOGLE_ACCOUNT') {
+        toast.error('This account uses Google Sign-In. Use the button below.');
+      } else {
+        const fallback = err instanceof Error ? err.message : 'Login failed. Check your credentials.';
+        toast.error(msg ?? fallback);
+      }
     } finally {
       setLoading(false);
     }
@@ -37,9 +41,20 @@ export default function LoginPage() {
       <h2 className="text-xl font-bold text-text-primary mb-1">Welcome back</h2>
       <p className="text-text-muted text-sm mb-6">Sign in to your Origo account</p>
 
+      {/* Google Sign-In */}
+      <div className="mb-4">
+        <GoogleButton />
+      </div>
+
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex-1 h-px bg-border" />
+        <span className="text-xs text-text-muted">or continue with email</span>
+        <div className="flex-1 h-px bg-border" />
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="College / personal email"
+          label="Email"
           type="email"
           placeholder="you@college.edu"
           value={email}

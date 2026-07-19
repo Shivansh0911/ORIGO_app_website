@@ -25,6 +25,9 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
 
   resendOtp: (email: string) => api.post('/auth/resend-otp', { email }),
+
+  googleAuth: (idToken: string) =>
+    api.post<LoginResponse>('/auth/google', { idToken }),
 };
 
 // ── Users ─────────────────────────────────────────────────────────────────────

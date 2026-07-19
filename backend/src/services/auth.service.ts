@@ -1,10 +1,15 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { Resend } from 'resend';
+import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../utils/prisma';
 import { redis } from '../utils/redis';
 import { encrypt, decrypt } from '../utils/encryption';
 import { issueTokenPair, invalidateAllSessions } from '../utils/jwt';
+
+// PSEUDO: Set GOOGLE_CLIENT_ID in Railway env vars
+// → Get it from console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client ID
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const DEVICE_ID_DEFAULT = 'web';
@@ -95,10 +100,64 @@ export const AuthService = {
   async login(email: string, password: string) {
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user) throw new Error('INVALID_CREDENTIALS');
+    if (!user.passwordHash) throw new Error('GOOGLE_ACCOUNT'); // signed up via Google — no password
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new Error('INVALID_CREDENTIALS');
     if (!user.isActive) throw new Error('ACCOUNT_DISABLED');
     return { tokens: await issueTokenPair(user.id, DEVICE_ID_DEFAULT), user };
+  },
+
+  async googleAuth(idToken: string, ip: string, userAgent: string) {
+    // 1. Verify the ID token against Google's public keys
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload?.sub) throw new Error('INVALID_GOOGLE_TOKEN');
+
+    const { sub: googleId, email, name, picture } = payload;
+    if (!email) throw new Error('GOOGLE_NO_EMAIL');
+
+    // 2. Find existing user by googleId, then fall back to email match (link accounts)
+    let user = await prisma.user.findUnique({ where: { googleId } })
+      ?? await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+
+    if (user) {
+      // Link googleId to existing account if not already linked
+      if (!user.googleId) {
+        user = await prisma.user.update({ where: { id: user.id }, data: { googleId } });
+      }
+      if (!user.isActive) throw new Error('ACCOUNT_DISABLED');
+    } else {
+      // 3. Create new user from Google profile
+      const base = (name ?? email.split('@')[0]).toLowerCase().replace(/\s+/g, '_');
+      let username = base;
+      let attempt = 0;
+      while (await prisma.user.findUnique({ where: { username } })) {
+        username = `${base}${++attempt}`;
+      }
+      user = await prisma.$transaction(async (tx) => {
+        const u = await tx.user.create({
+          data: {
+            name: name ?? username,
+            username,
+            email: email.toLowerCase(),
+            passwordHash: null,
+            googleId,
+            avatarUrl: picture ?? null,
+          },
+        });
+        await tx.userPrivacy.create({ data: { userId: u.id } });
+        await tx.consentLog.create({
+          data: { userId: u.id, version: '1.0', ipAddress: ip, userAgent },
+        });
+        return u;
+      });
+    }
+
+    const tokens = await issueTokenPair(user.id, DEVICE_ID_DEFAULT);
+    return { tokens, user };
   },
 
   async refresh(userId: string, deviceId: string, oldToken: string) {
