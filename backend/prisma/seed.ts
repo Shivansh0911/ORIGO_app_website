@@ -1,4 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import 'dotenv/config';
+import { PrismaClient, InterestCategory } from '@prisma/client';
+import bcrypt from 'bcrypt';
+import { encrypt } from '../src/utils/encryption';
 
 const prisma = new PrismaClient();
 
@@ -76,7 +79,7 @@ async function main() {
   // Seed communities
   for (const community of COMMUNITIES) {
     const interest = await prisma.interest.findFirst({
-      where: { category: community.category as Parameters<typeof prisma.interest.findFirst>[0]['where'] extends { category?: infer C } ? C : never },
+      where: { category: community.category as InterestCategory },
     });
     await prisma.community.create({
       data: {
@@ -88,6 +91,127 @@ async function main() {
     }).catch(() => {});
   }
   console.log(`Seeded ${COMMUNITIES.length} communities`);
+
+  // Seed Users for Local Testing
+  console.log('Seeding mock users...');
+  const mockPasswordHash = await bcrypt.hash('password123', 12);
+
+  const mockUsersData = [
+    {
+      email: 'aarav@college.edu',
+      name: 'Aarav Mehta',
+      username: 'aarav_mehta',
+      gender: 'MALE' as const,
+      lookingFor: ['FRIENDS', 'NETWORKING'] as any,
+      collegeName: 'IIT Delhi',
+      collegeEmail: 'aarav@iitd.ac.in',
+      bio: 'Deep learning researcher. Looking for a study buddy and gym partner.',
+      avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&q=80',
+      interests: ['Coding', 'AI/ML', 'Fitness', 'Cricket']
+    },
+    {
+      email: 'ananya@college.edu',
+      name: 'Ananya Roy',
+      username: 'ananya_roy',
+      gender: 'FEMALE' as const,
+      lookingFor: ['DATING', 'FRIENDS'] as any,
+      collegeName: 'IIT Delhi',
+      collegeEmail: 'ananya@iitd.ac.in',
+      bio: "Design student who loves painting, coffee, and EDM. Let's explore cafe spots!",
+      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80',
+      interests: ['UI/UX', 'Painting', 'EDM', 'Café-hopping', 'Photography']
+    },
+    {
+      email: 'rohan@college.edu',
+      name: 'Rohan Sharma',
+      username: 'rohan_sharma',
+      gender: 'MALE' as const,
+      lookingFor: ['STUDY_BUDDY', 'FRIENDS'] as any,
+      collegeName: 'IIT Delhi',
+      collegeEmail: 'rohan@iitd.ac.in',
+      bio: 'Acoustic guitar player, MUN enthusiast. Doing a minor in Finance.',
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
+      interests: ['Guitar', 'Music', 'Finance', 'MUNs']
+    },
+    {
+      email: 'diya@college.edu',
+      name: 'Diya Kapoor',
+      username: 'diya_kapoor',
+      gender: 'FEMALE' as const,
+      lookingFor: ['FRIENDS', 'STUDY_BUDDY'] as any,
+      collegeName: 'IIT Delhi',
+      collegeEmail: 'diya@iitd.ac.in',
+      bio: "Pre-final year student. Passionate about startups and UI/UX design. Let's connect!",
+      avatarUrl: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&q=80',
+      interests: ['UI/UX', 'Entrepreneurship', 'Books', 'Traveling']
+    },
+    {
+      email: 'kabir@college.edu',
+      name: 'Kabir Singh',
+      username: 'kabir_singh',
+      gender: 'MALE' as const,
+      lookingFor: ['FRIENDS', 'NETWORKING'] as any,
+      collegeName: 'IIT Delhi',
+      collegeEmail: 'kabir@iitd.ac.in',
+      bio: 'Web developer & e-sports gamer. Up for badminton matches anytime.',
+      avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
+      interests: ['Coding', 'Gaming', 'Esports', 'Badminton']
+    }
+  ];
+
+  for (const item of mockUsersData) {
+    const { interests, ...userData } = item;
+    let user = await prisma.user.findUnique({ where: { email: userData.email } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: userData.email,
+          name: userData.name,
+          username: userData.username,
+          passwordHash: mockPasswordHash,
+          gender: userData.gender,
+          lookingFor: userData.lookingFor,
+          collegeName: userData.collegeName,
+          collegeEmail: encrypt(userData.collegeEmail),
+          bio: userData.bio,
+          avatarUrl: userData.avatarUrl,
+          dateOfBirth: encrypt('2004-01-01'),
+          isVerified: true,
+          verifiedAt: new Date(),
+          isActive: true,
+        }
+      });
+
+      await prisma.userPrivacy.upsert({
+        where: { userId: user.id },
+        update: { discoverableBy: 'EVERYONE' },
+        create: {
+          userId: user.id,
+          discoverableBy: 'EVERYONE',
+        }
+      });
+
+      for (const name of interests) {
+        const inst = await prisma.interest.findUnique({ where: { name } });
+        if (inst) {
+          await prisma.userInterest.upsert({
+            where: {
+              userId_interestId: {
+                userId: user.id,
+                interestId: inst.id,
+              }
+            },
+            update: {},
+            create: {
+              userId: user.id,
+              interestId: inst.id,
+            }
+          });
+        }
+      }
+    }
+  }
+  console.log(`Seeded ${mockUsersData.length} mock users`);
 
   console.log('Database seeded successfully!');
 }
