@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, ChevronRight, Trash2, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { authApi, usersApi } from '../../api/endpoints';
+import { authApi } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import { useSocketStore } from '../../store/socketStore';
 import Modal from '../../components/ui/Modal';
@@ -26,7 +26,7 @@ export default function SettingsPage() {
     if (deleteInput !== 'DELETE') { toast.error('Type DELETE to confirm'); return; }
     setDeleting(true);
     try {
-      await usersApi.deleteAccount();
+      await authApi.deleteAccount();
       disconnect();
       clearAuth();
       navigate('/login', { replace: true });

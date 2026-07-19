@@ -10,9 +10,6 @@ export const authApi = {
   register: (body: { name: string; username: string; email: string; password: string; phone?: string }) =>
     api.post<LoginResponse>('/auth/register', body),
 
-  verifyOtp: (body: { email: string; otp: string }) =>
-    api.post<LoginResponse>('/auth/verify-otp', body),
-
   login: (body: { email: string; password: string }) =>
     api.post<LoginResponse>('/auth/login', body),
 
@@ -24,10 +21,10 @@ export const authApi = {
 
   logout: () => api.post('/auth/logout'),
 
-  resendOtp: (email: string) => api.post('/auth/resend-otp', { email }),
-
   googleAuth: (idToken: string) =>
     api.post<LoginResponse>('/auth/google', { idToken }),
+
+  deleteAccount: () => api.delete('/auth/account'),
 };
 
 // ── Users ─────────────────────────────────────────────────────────────────────
@@ -52,14 +49,12 @@ export const usersApi = {
 
   getProfile: (userId: string) => api.get<PublicUser>(`/users/${userId}`),
 
-  blockUser: (userId: string) => api.post(`/users/${userId}/block`),
+  blockUser: (userId: string) => api.post(`/users/block/${userId}`),
 
   reportUser: (userId: string, reason: string) =>
-    api.post(`/users/${userId}/report`, { reason }),
+    api.post(`/users/report/${userId}`, { reason }),
 
-  deleteAccount: () => api.delete('/users/me'),
-
-  updatePushToken: (token: string) => api.post('/users/me/push-token', { token }),
+  updatePushToken: (token: string) => api.post('/users/push-token', { token }),
 };
 
 // ── Discover ──────────────────────────────────────────────────────────────────
