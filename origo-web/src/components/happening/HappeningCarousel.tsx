@@ -67,10 +67,10 @@ export default function HappeningCarousel({ title = 'Happening around you' }: { 
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-bold text-text-primary">{title}</h2>
         <div className="flex gap-1">
-          <button onClick={() => scrollBy(-1)} className="w-8 h-8 rounded-full border border-border text-text-secondary hover:text-white hover:border-primary/50 flex items-center justify-center transition-colors" aria-label="Scroll left">
+          <button onClick={() => scrollBy(-1)} className="w-8 h-8 rounded-full border border-border text-text-secondary hover:text-primary hover:border-primary/50 flex items-center justify-center transition-colors" aria-label="Scroll left">
             <ChevronLeft size={16} />
           </button>
-          <button onClick={() => scrollBy(1)} className="w-8 h-8 rounded-full border border-border text-text-secondary hover:text-white hover:border-primary/50 flex items-center justify-center transition-colors" aria-label="Scroll right">
+          <button onClick={() => scrollBy(1)} className="w-8 h-8 rounded-full border border-border text-text-secondary hover:text-primary hover:border-primary/50 flex items-center justify-center transition-colors" aria-label="Scroll right">
             <ChevronRight size={16} />
           </button>
         </div>

@@ -4,18 +4,18 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#0D0D14',
+        bg: '#F8F7FF',
         primary: '#6C3DFF',
         'primary-light': '#8B5CF6',
         accent: '#FF6B9D',
         amber: '#F59E0B',
         green: '#10B981',
-        card: '#1A1A2E',
-        muted: '#16213E',
-        border: '#2A2A45',
-        'text-primary': '#FFFFFF',
-        'text-secondary': '#B0B0CC',
-        'text-muted': '#6B6B8A',
+        card: '#FFFFFF',
+        muted: '#EFEDFF',
+        border: '#DDD8F0',
+        'text-primary': '#1A1A2E',
+        'text-secondary': '#4A4A6A',
+        'text-muted': '#8080A0',
       },
       fontFamily: {
         poppins: ['Poppins', 'sans-serif'],

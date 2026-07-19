@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-bg">
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-[#0D0D14]">
       {/* Radial gradient background */}
       <div className="absolute inset-0 pointer-events-none">
         <div
@@ -79,7 +79,7 @@ export default function HeroSection() {
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <a
                 href="#"
-                className="flex items-center gap-3 bg-card border border-border rounded-xl px-5 py-3 hover:border-primary transition-colors group"
+                className="flex items-center gap-3 bg-[#1A1A2E] border border-[#2A2A45] rounded-xl px-5 py-3 hover:border-primary transition-colors group"
               >
                 <div className="w-8 h-8 flex items-center justify-center">
                   <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current text-green" xmlns="http://www.w3.org/2000/svg">
@@ -93,7 +93,7 @@ export default function HeroSection() {
               </a>
               <a
                 href="#"
-                className="flex items-center gap-3 bg-card border border-border rounded-xl px-5 py-3 hover:border-primary transition-colors group"
+                className="flex items-center gap-3 bg-[#1A1A2E] border border-[#2A2A45] rounded-xl px-5 py-3 hover:border-primary transition-colors group"
               >
                 <div className="w-8 h-8 flex items-center justify-center">
                   <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current text-white" xmlns="http://www.w3.org/2000/svg">
@@ -139,16 +139,16 @@ export default function HeroSection() {
               />
               {/* Phone frame */}
               <div
-                className="relative w-64 md:w-72 h-[540px] md:h-[580px] rounded-[40px] border-4 border-border shadow-2xl animate-float"
+                className="relative w-64 md:w-72 h-[540px] md:h-[580px] rounded-[40px] border-4 border-[#2A2A45] shadow-2xl animate-float"
                 style={{ background: '#0D0D14', borderColor: '#2A2A45' }}
               >
                 {/* Notch */}
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-5 bg-border rounded-full" />
 
                 {/* Screen content */}
-                <div className="absolute top-12 left-3 right-3 bottom-6 rounded-[28px] overflow-hidden bg-card">
+                <div className="absolute top-12 left-3 right-3 bottom-6 rounded-[28px] overflow-hidden bg-[#1A1A2E]">
                   {/* App header */}
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-[#2A2A45]">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
                         <span className="text-white text-xs font-bold">O</span>
@@ -156,14 +156,14 @@ export default function HeroSection() {
                       <span className="text-white text-xs font-semibold font-poppins">Origo</span>
                     </div>
                     <div className="flex gap-2">
-                      <div className="w-6 h-6 rounded-full bg-muted" />
-                      <div className="w-6 h-6 rounded-full bg-muted" />
+                      <div className="w-6 h-6 rounded-full bg-[#16213E]" />
+                      <div className="w-6 h-6 rounded-full bg-[#16213E]" />
                     </div>
                   </div>
 
                   {/* Profile card mockup */}
                   <div className="p-3">
-                    <div className="rounded-2xl overflow-hidden border border-border">
+                    <div className="rounded-2xl overflow-hidden border border-[#2A2A45]">
                       {/* Profile image area */}
                       <div
                         className="h-44 flex items-end p-3"
@@ -203,7 +203,7 @@ export default function HeroSection() {
                       </div>
 
                       {/* Rizz In 5 section */}
-                      <div className="p-3 bg-muted">
+                      <div className="p-3 bg-[#16213E]">
                         <div className="text-text-muted text-[9px] mb-1.5 font-medium">RIZZ IN 5</div>
                         <div className="flex gap-1 mb-2">
                           {[1, 2, 3, 4, 5].map((n) => (
@@ -250,7 +250,7 @@ export default function HeroSection() {
 
               {/* Floating notification cards */}
               <div
-                className="absolute -right-4 top-20 bg-card border border-border rounded-2xl px-3 py-2 shadow-xl animate-float"
+                className="absolute -right-4 top-20 bg-[#1A1A2E] border border-[#2A2A45] rounded-2xl px-3 py-2 shadow-xl animate-float"
                 style={{ animationDelay: '1s', minWidth: '140px' }}
               >
                 <div className="flex items-center gap-2">
@@ -263,7 +263,7 @@ export default function HeroSection() {
               </div>
 
               <div
-                className="absolute -left-4 bottom-28 bg-card border border-border rounded-2xl px-3 py-2 shadow-xl animate-float"
+                className="absolute -left-4 bottom-28 bg-[#1A1A2E] border border-[#2A2A45] rounded-2xl px-3 py-2 shadow-xl animate-float"
                 style={{ animationDelay: '2s', minWidth: '150px' }}
               >
                 <div className="flex items-center gap-2">

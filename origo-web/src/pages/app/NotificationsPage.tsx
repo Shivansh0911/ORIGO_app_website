@@ -81,7 +81,7 @@ export default function NotificationsPage() {
               <button
                 key={n.id}
                 onClick={() => !n.isRead && markOne.mutate(n.id)}
-                className={`w-full flex items-start gap-3 p-3.5 rounded-xl text-left transition-colors ${n.isRead ? 'opacity-60 hover:bg-white/5' : 'bg-primary/5 hover:bg-primary/10'}`}
+                className={`w-full flex items-start gap-3 p-3.5 rounded-xl text-left transition-colors ${n.isRead ? 'opacity-60 hover:bg-primary/10' : 'bg-primary/5 hover:bg-primary/10'}`}
               >
                 <span className="text-xl mt-0.5">{TYPE_ICONS[n.type] ?? TYPE_ICONS.DEFAULT}</span>
                 <div className="flex-1 min-w-0">

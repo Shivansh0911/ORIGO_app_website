@@ -41,7 +41,7 @@ function SessionRow({ session, myId }: { session: RizzSession; myId: string }) {
   return (
     <Link
       to={`/app/rizz/${session.id}`}
-      className="flex items-center gap-3 p-4 hover:bg-white/5 rounded-xl transition-colors group"
+      className="flex items-center gap-3 p-4 hover:bg-primary/10 rounded-xl transition-colors group"
     >
       <Avatar src={other.avatarUrl} name={other.name} size={44} />
       <div className="flex-1 min-w-0">

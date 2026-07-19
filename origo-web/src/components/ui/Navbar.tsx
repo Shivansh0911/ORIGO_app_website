@@ -20,7 +20,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-card/95 backdrop-blur-md border-b border-border' : 'bg-transparent'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#1A1A2E]/95 backdrop-blur-md border-b border-[#2A2A45]' : 'bg-transparent'}`}>
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -34,7 +34,7 @@ export default function Navbar() {
             <Link
               key={link.path}
               to={link.path}
-              className={`text-sm font-medium transition-colors ${location.pathname === link.path ? 'text-primary' : 'text-text-secondary hover:text-white'}`}
+              className={`text-sm font-medium transition-colors ${location.pathname === link.path ? 'text-primary' : 'text-[#B0B0CC] hover:text-white'}`}
             >
               {link.label}
             </Link>
@@ -50,13 +50,13 @@ export default function Navbar() {
           </Link>
         </div>
 
-        <button className="md:hidden text-text-secondary" onClick={() => setMenuOpen(!menuOpen)}>
+        <button className="md:hidden text-[#B0B0CC]" onClick={() => setMenuOpen(!menuOpen)}>
           <span className="text-2xl">{menuOpen ? '✕' : '☰'}</span>
         </button>
       </div>
 
       {menuOpen && (
-        <div className="md:hidden bg-card border-t border-border px-6 py-4 flex flex-col gap-4">
+        <div className="md:hidden bg-[#1A1A2E] border-t border-[#2A2A45] px-6 py-4 flex flex-col gap-4">
           {navLinks.map((link) => (
             <Link
               key={link.path}

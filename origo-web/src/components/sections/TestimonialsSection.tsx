@@ -60,7 +60,7 @@ export default function TestimonialsSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 bg-bg relative overflow-hidden">
+    <section ref={sectionRef} className="py-24 bg-[#0D0D14] relative overflow-hidden">
       {/* Background decoration */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full pointer-events-none opacity-10"

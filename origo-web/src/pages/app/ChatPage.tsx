@@ -92,7 +92,7 @@ export default function ChatPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex items-center gap-3">
-        <button onClick={() => navigate('/app/messages')} className="text-text-muted hover:text-white transition-colors">
+        <button onClick={() => navigate('/app/messages')} className="text-text-muted hover:text-primary transition-colors">
           <ArrowLeft size={20} />
         </button>
         {other && (
@@ -169,7 +169,7 @@ export default function ChatPage() {
         <button
           type="button"
           onClick={() => setStickerOpen((o) => !o)}
-          className={`p-3 rounded-xl border transition-colors ${stickerOpen ? 'border-primary text-primary bg-primary/10' : 'border-border text-text-muted hover:text-white'}`}
+          className={`p-3 rounded-xl border transition-colors ${stickerOpen ? 'border-primary text-primary bg-primary/10' : 'border-border text-text-muted hover:text-primary'}`}
         >
           <Smile size={18} />
         </button>

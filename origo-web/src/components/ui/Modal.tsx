@@ -25,7 +25,7 @@ export default function Modal({ open, onClose, title, children, maxWidth = 'max-
         {title && (
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border">
             <h3 className="font-semibold text-text-primary text-lg">{title}</h3>
-            <button onClick={onClose} className="text-text-muted hover:text-white transition-colors">
+            <button onClick={onClose} className="text-text-muted hover:text-primary transition-colors">
               <X size={20} />
             </button>
           </div>

@@ -51,7 +51,7 @@ export default function PremiumSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} id="premium" className="py-24 bg-bg relative overflow-hidden">
+    <section ref={sectionRef} id="premium" className="py-24 bg-[#0D0D14] relative overflow-hidden">
       {/* Background glow */}
       <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full pointer-events-none opacity-15"

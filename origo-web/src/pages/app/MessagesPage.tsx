@@ -17,7 +17,7 @@ function ConvRow({ conv, myId }: { conv: Conversation; myId: string }) {
   return (
     <Link
       to={`/app/messages/${conv.id}`}
-      className="flex items-center gap-3 px-4 py-3.5 hover:bg-white/5 rounded-xl transition-colors"
+      className="flex items-center gap-3 px-4 py-3.5 hover:bg-primary/10 rounded-xl transition-colors"
     >
       <Avatar src={other.avatarUrl} name={other.name} size={46} />
       <div className="flex-1 min-w-0">

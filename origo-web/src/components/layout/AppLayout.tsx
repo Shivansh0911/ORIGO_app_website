@@ -52,7 +52,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   ? 'bg-primary text-white shadow-lg shadow-primary/20'
                   : highlight
                     ? 'text-accent hover:bg-accent/10'
-                    : 'text-text-secondary hover:bg-white/5 hover:text-white'}`
+                    : 'text-text-secondary hover:bg-primary/10 hover:text-primary'}`
               }
             >
               <Icon size={18} />
@@ -77,7 +77,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             to="/app/notifications"
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-              ${isActive ? 'bg-primary text-white' : 'text-text-secondary hover:bg-white/5 hover:text-white'}`
+              ${isActive ? 'bg-primary text-white' : 'text-text-secondary hover:bg-primary/10 hover:text-primary'}`
             }
           >
             <Bell size={18} />

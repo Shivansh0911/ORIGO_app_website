@@ -19,7 +19,7 @@ export default function ProfilePage() {
       {/* Header bar */}
       <div className="px-6 py-4 border-b border-border flex items-center justify-between">
         <h1 className="text-xl font-bold text-text-primary">My Profile</h1>
-        <Link to="/app/settings" className="text-text-muted hover:text-white transition-colors">
+        <Link to="/app/settings" className="text-text-muted hover:text-primary transition-colors">
           <Settings size={20} />
         </Link>
       </div>
@@ -56,7 +56,7 @@ export default function ProfilePage() {
         <div className="grid grid-cols-2 gap-3">
           <Link
             to="/app/profile/edit"
-            className="flex items-center justify-center gap-2 py-3 bg-card border border-border rounded-xl text-text-secondary hover:border-primary/40 hover:text-white transition-all text-sm font-medium"
+            className="flex items-center justify-center gap-2 py-3 bg-card border border-border rounded-xl text-text-secondary hover:border-primary/40 hover:text-primary transition-all text-sm font-medium"
           >
             <Edit size={16} /> Edit Profile
           </Link>

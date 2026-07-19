@@ -61,7 +61,7 @@ export default function EditProfilePage() {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="px-6 py-4 border-b border-border flex items-center gap-3">
-        <button onClick={() => navigate('/app/profile')} className="text-text-muted hover:text-white transition-colors">
+        <button onClick={() => navigate('/app/profile')} className="text-text-muted hover:text-primary transition-colors">
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-xl font-bold text-text-primary">Edit Profile</h1>

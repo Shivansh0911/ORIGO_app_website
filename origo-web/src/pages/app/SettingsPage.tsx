@@ -41,7 +41,7 @@ export default function SettingsPage() {
   const SettingRow = ({ label, description, onClick, danger = false }: { label: string; description?: string; onClick?: () => void; danger?: boolean }) => (
     <button
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-colors text-left ${danger ? 'hover:bg-red-500/10' : 'hover:bg-white/5'}`}
+      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-colors text-left ${danger ? 'hover:bg-red-500/10' : 'hover:bg-primary/10'}`}
     >
       <div className="flex-1">
         <p className={`text-sm font-medium ${danger ? 'text-red-400' : 'text-text-primary'}`}>{label}</p>
@@ -54,7 +54,7 @@ export default function SettingsPage() {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="px-6 py-4 border-b border-border flex items-center gap-3">
-        <button onClick={() => navigate('/app/profile')} className="text-text-muted hover:text-white transition-colors">
+        <button onClick={() => navigate('/app/profile')} className="text-text-muted hover:text-primary transition-colors">
           <ArrowLeft size={20} />
         </button>
         <h1 className="text-xl font-bold text-text-primary">Settings</h1>

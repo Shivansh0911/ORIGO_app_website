@@ -104,7 +104,7 @@ export default function FeaturesSection() {
   }, []);
 
   return (
-    <section className="py-24 bg-bg relative overflow-hidden">
+    <section className="py-24 bg-[#0D0D14] relative overflow-hidden">
       {/* Background decoration */}
       <div
         className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none"

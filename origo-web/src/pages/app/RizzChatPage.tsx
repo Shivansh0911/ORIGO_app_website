@@ -106,7 +106,7 @@ export default function RizzChatPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border flex items-center gap-3">
-        <button onClick={() => navigate('/app/rizz')} className="text-text-muted hover:text-white transition-colors">
+        <button onClick={() => navigate('/app/rizz')} className="text-text-muted hover:text-primary transition-colors">
           <ArrowLeft size={20} />
         </button>
         <Avatar src={other.avatarUrl} name={other.name} size={36} />

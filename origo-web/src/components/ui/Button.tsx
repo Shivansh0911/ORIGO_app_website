@@ -14,7 +14,7 @@ export default function Button({ children, variant = 'primary', size = 'md', onC
   const variants = {
     primary: 'bg-primary hover:bg-primary-light text-white shadow-lg shadow-primary/25',
     secondary: 'bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-white',
-    ghost: 'bg-transparent text-text-secondary hover:text-white',
+    ghost: 'bg-transparent text-text-secondary hover:text-primary',
   };
   const sizes = {
     sm: 'px-4 py-2 text-sm',
