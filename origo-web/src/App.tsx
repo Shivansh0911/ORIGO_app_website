@@ -23,7 +23,6 @@ import ConsentBanner from './components/consent/ConsentBanner';
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
-import VerifyOtpPage from './pages/auth/VerifyOtpPage';
 import CollegeVerifyPage from './pages/auth/CollegeVerifyPage';
 import InterestPickerPage from './pages/auth/InterestPickerPage';
 import LookingForPage from './pages/auth/LookingForPage';
@@ -120,7 +119,6 @@ export default function App() {
       {/* Auth flow */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/verify-otp" element={<VerifyOtpPage />} />
       <Route path="/verify-college" element={<ProtectedRoute><CollegeVerifyPage /></ProtectedRoute>} />
       <Route path="/interests" element={<ProtectedRoute><InterestPickerPage /></ProtectedRoute>} />
       <Route path="/looking-for" element={<ProtectedRoute><LookingForPage /></ProtectedRoute>} />
