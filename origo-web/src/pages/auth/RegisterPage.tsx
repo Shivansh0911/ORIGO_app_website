@@ -54,6 +54,7 @@ export default function RegisterPage() {
       toast.success('Account created successfully!');
       navigate('/verify-college');
     } catch (err: unknown) {
+      console.error('Registration error:', err);
       const resData = (err as { response?: { data?: { error?: string; fields?: Record<string, string[]> } } }).response?.data;
       if (resData?.fields) {
         const details = Object.entries(resData.fields)
@@ -64,8 +65,12 @@ export default function RegisterPage() {
         toast.error('This email is already registered. Please sign in instead.');
       } else if (resData?.error === 'USERNAME_TAKEN') {
         toast.error('This username is already taken. Please choose another username.');
+      } else if (resData?.error) {
+        toast.error(resData.error);
+      } else if (err instanceof Error) {
+        toast.error(err.message);
       } else {
-        toast.error(resData?.error ?? 'Registration failed. Please check your details and try again.');
+        toast.error('Registration failed. Please check your details and try again.');
       }
     } finally {
       setLoading(false);

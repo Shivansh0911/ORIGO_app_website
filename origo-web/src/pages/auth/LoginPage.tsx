@@ -23,8 +23,10 @@ export default function LoginPage() {
       setAuth(data.user, data.accessToken, data.refreshToken);
       navigate('/app/discover', { replace: true });
     } catch (err: unknown) {
+      console.error('Login error:', err);
       const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
-      toast.error(msg ?? 'Login failed. Check your credentials.');
+      const fallbackMsg = err instanceof Error ? err.message : 'Login failed. Check your credentials.';
+      toast.error(msg ?? fallbackMsg);
     } finally {
       setLoading(false);
     }
