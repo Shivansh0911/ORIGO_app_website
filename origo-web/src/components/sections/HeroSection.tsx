@@ -60,18 +60,18 @@ export default function HeroSection() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
               <Link
-                to="/download"
+                to="/login"
                 className="bg-primary hover:bg-primary-light text-white font-semibold font-poppins px-8 py-4 rounded-full text-base transition-all duration-200 shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
+              >
+                <span>🚀</span>
+                Launch Web App
+              </Link>
+              <Link
+                to="/download"
+                className="border-2 border-primary text-primary hover:bg-primary hover:text-white font-semibold font-poppins px-8 py-4 rounded-full text-base transition-all duration-200 flex items-center justify-center gap-2"
               >
                 <span>📱</span>
                 Download App
-              </Link>
-              <Link
-                to="/features"
-                className="border-2 border-primary text-primary hover:bg-primary hover:text-white font-semibold font-poppins px-8 py-4 rounded-full text-base transition-all duration-200 flex items-center justify-center gap-2"
-              >
-                <span>▶</span>
-                See How It Works
               </Link>
             </div>
 
