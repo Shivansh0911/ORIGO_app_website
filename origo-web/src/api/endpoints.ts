@@ -183,7 +183,7 @@ export const pulseApi = {
     api.post<Pulse>('/pulse', body),
 
   respond: (pulseId: string) =>
-    api.post<PulseResponse>(`/pulse/${pulseId}/respond`),
+    api.post<PulseResponse & { rizzSessionId: string | null }>(`/pulse/${pulseId}/respond`),
 
   cancel: (pulseId: string) =>
     api.delete(`/pulse/${pulseId}`),

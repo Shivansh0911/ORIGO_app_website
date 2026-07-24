@@ -161,6 +161,13 @@ export interface LoginResponse {
 export type PulseCategory = 'CHILL' | 'MOVE' | 'PLAY' | 'TALK' | 'GROW' | 'DATE_PRACTICE';
 export type PulseStatus = 'ACTIVE' | 'EXPIRED' | 'FULFILLED' | 'CANCELLED';
 
+export interface PulseResponderEntry {
+  id: string;
+  responderId: string;
+  rizzSessionId: string | null;
+  responder: Pick<PublicUser, 'id' | 'name' | 'avatarUrl'>;
+}
+
 export interface Pulse {
   id: string;
   authorId: string;
@@ -173,7 +180,8 @@ export interface Pulse {
   expiresAt: string;
   createdAt: string;
   hasResponded?: boolean;
-  responses?: { id: string }[];
+  // Feed returns minimal { id }, getMyPulse returns full responder profiles
+  responses?: ({ id: string } | PulseResponderEntry)[];
 }
 
 export interface PulseResponse {

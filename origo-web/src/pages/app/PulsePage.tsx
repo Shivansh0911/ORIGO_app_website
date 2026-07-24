@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Radio, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -6,12 +7,14 @@ import { pulseApi } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import PulseCard from '../../components/pulse/PulseCard';
 import CreatePulseSheet from '../../components/pulse/CreatePulseSheet';
-import type { PulseCategory } from '../../types';
+import Avatar from '../../components/ui/Avatar';
+import type { PulseCategory, PulseResponderEntry } from '../../types';
 
 export default function PulsePage() {
   const [showCreate, setShowCreate] = useState(false);
   const [respondingId, setRespondingId] = useState<string | null>(null);
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const qc = useQueryClient();
 
   const { data: feed = [], isLoading } = useQuery({
@@ -35,16 +38,27 @@ export default function PulsePage() {
       qc.invalidateQueries({ queryKey: ['pulse-mine'] });
     },
     onError: (err: unknown) => {
-      toast.error((err as { response?: { data?: { error?: string } } }).response?.data?.error ?? 'Failed to post pulse');
+      const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
+      toast.error(msg === 'ACTIVE_PULSE_EXISTS'
+        ? 'You already have a live Pulse — cancel it first'
+        : msg ?? 'Failed to post pulse');
     },
   });
 
   const respondMutation = useMutation({
     mutationFn: (pulseId: string) => pulseApi.respond(pulseId),
-    onSuccess: () => {
-      toast.success("You're in! The author will be notified.");
-      qc.invalidateQueries({ queryKey: ['pulse-feed'] });
-      setRespondingId(null);
+    onSuccess: (res) => {
+      const rizzSessionId = res.data.rizzSessionId;
+      if (rizzSessionId) {
+        toast.success("You're in! Taking you to chat…");
+        qc.invalidateQueries({ queryKey: ['pulse-feed'] });
+        setRespondingId(null);
+        navigate(`/app/rizz/${rizzSessionId}`);
+      } else {
+        toast.success("You're in! The author will be notified.");
+        qc.invalidateQueries({ queryKey: ['pulse-feed'] });
+        setRespondingId(null);
+      }
     },
     onError: (err: unknown) => {
       toast.error((err as { response?: { data?: { error?: string } } }).response?.data?.error ?? 'Failed to respond');
@@ -66,6 +80,9 @@ export default function PulsePage() {
     setRespondingId(pulseId);
     respondMutation.mutate(pulseId);
   };
+
+  // Cast responses to the richer type from getMyPulse
+  const myPulseResponders = (myPulse?.responses ?? []) as PulseResponderEntry[];
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6">
@@ -89,10 +106,42 @@ export default function PulsePage() {
         </button>
       </div>
 
-      {/* Active pulse notice */}
+      {/* My active pulse — with responder list (PULSE-04) */}
       {myPulse && (
-        <div className="mb-4 bg-primary/5 border border-primary/20 rounded-2xl p-3 text-sm text-primary font-medium">
-          You have an active Pulse. Cancel it to post a new one.
+        <div className="mb-5 bg-primary/5 border border-primary/20 rounded-2xl p-4">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div>
+              <p className="text-xs text-primary font-semibold uppercase tracking-wide mb-0.5">Your active Pulse</p>
+              <p className="text-sm text-text-primary font-medium">{myPulse.text}</p>
+            </div>
+            <button
+              onClick={() => cancelMutation.mutate(myPulse.id)}
+              className="text-xs text-text-muted hover:text-red-500 transition-colors shrink-0"
+            >
+              Cancel
+            </button>
+          </div>
+          {myPulseResponders.length > 0 ? (
+            <div>
+              <p className="text-xs text-text-muted mb-2">{myPulseResponders.length} student{myPulseResponders.length !== 1 ? 's' : ''} in</p>
+              <div className="flex flex-wrap gap-2">
+                {myPulseResponders.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => r.rizzSessionId && navigate(`/app/rizz/${r.rizzSessionId}`)}
+                    disabled={!r.rizzSessionId}
+                    className="flex items-center gap-1.5 px-2 py-1 bg-card border border-border rounded-full hover:border-primary transition-colors disabled:opacity-60"
+                    title={r.rizzSessionId ? `Chat with ${r.responder.name}` : r.responder.name}
+                  >
+                    <Avatar src={r.responder.avatarUrl} name={r.responder.name} size={20} />
+                    <span className="text-xs text-text-secondary">{r.responder.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-text-muted">No responses yet — check back soon</p>
+          )}
         </div>
       )}
 

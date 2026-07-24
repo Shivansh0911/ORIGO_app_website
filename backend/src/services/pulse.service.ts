@@ -10,6 +10,12 @@ export const PulseService = {
     text: string;
     vibe?: string;
   }) {
+    // PULSE-02: one active Pulse per user at a time
+    const activePulse = await prisma.pulse.findFirst({
+      where: { authorId, status: 'ACTIVE', expiresAt: { gt: new Date() } },
+    });
+    if (activePulse) throw new Error('ACTIVE_PULSE_EXISTS');
+
     const author = await prisma.user.findUnique({
       where: { id: authorId },
       select: { collegeName: true },
@@ -37,12 +43,22 @@ export const PulseService = {
       select: { collegeName: true },
     });
 
+    // PULSE-03: exclude blocked users (both directions)
+    const blocks = await prisma.block.findMany({
+      where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
+      select: { blockerId: true, blockedId: true },
+    });
+    const blockedIds = new Set(
+      blocks.flatMap((b) => [b.blockerId, b.blockedId]).filter((id) => id !== userId),
+    );
+
     const now = new Date();
     const pulses = await prisma.pulse.findMany({
       where: {
         status: 'ACTIVE',
         expiresAt: { gt: now },
         collegeName: viewer?.collegeName ?? undefined,
+        authorId: { notIn: [userId, ...blockedIds] }, // exclude own + blocked
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
@@ -66,11 +82,34 @@ export const PulseService = {
     });
     if (existing) throw new Error('ALREADY_RESPONDED');
 
+    // PULSE-01: spawn a Rizz session so responder and author can actually talk
+    let rizzSessionId: string | null = null;
+    try {
+      const { RizzService } = await import('./rizz.service');
+      const session = await RizzService.startSession(responderId, pulse.authorId);
+      rizzSessionId = session.id;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg === 'SESSION_ALREADY_EXISTS' || msg === 'ALREADY_MATCHED') {
+        // Resolve to existing session so the client can navigate straight in
+        const existingSession = await prisma.rizzSession.findFirst({
+          where: {
+            OR: [
+              { initiatorId: responderId, targetId: pulse.authorId },
+              { initiatorId: pulse.authorId, targetId: responderId },
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+        rizzSessionId = existingSession?.id ?? null;
+      }
+      // BLOCKED, DAILY_LIMIT_REACHED → rizzSessionId stays null; response still created
+    }
+
     const response = await prisma.pulseResponse.create({
-      data: { id: crypto.randomUUID(), pulseId, responderId },
+      data: { id: crypto.randomUUID(), pulseId, responderId, rizzSessionId },
     });
 
-    // Notify pulse author
     const responder = await prisma.user.findUnique({ where: { id: responderId }, select: { name: true } });
     await prisma.notification.create({
       data: {
@@ -78,11 +117,11 @@ export const PulseService = {
         type: 'NEW_PULSE_RESPONSE',
         title: 'Someone responded to your Pulse!',
         body: `${responder?.name ?? 'A student'} is in for: ${pulse.text}`,
-        data: { pulseId },
+        data: { pulseId, ...(rizzSessionId ? { rizzSessionId } : {}) },
       },
     }).catch(() => {});
 
-    return response;
+    return { ...response, rizzSessionId };
   },
 
   async cancelPulse(pulseId: string, userId: string) {
@@ -96,10 +135,21 @@ export const PulseService = {
     });
   },
 
+  // PULSE-04: include responder profiles + rizzSessionId so the author can see who's in and jump to chat
   async getMyPulse(userId: string) {
     return prisma.pulse.findFirst({
       where: { authorId: userId, status: 'ACTIVE', expiresAt: { gt: new Date() } },
-      include: { responses: { select: { id: true } } },
+      include: {
+        responses: {
+          select: {
+            id: true,
+            responderId: true,
+            rizzSessionId: true,
+            responder: { select: { id: true, name: true, avatarUrl: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   },
