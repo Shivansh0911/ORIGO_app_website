@@ -7,7 +7,7 @@ import type {
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const authApi = {
-  register: (body: { name: string; username: string; email: string; password: string; phone?: string }) =>
+  register: (body: { name: string; username: string; email: string; dateOfBirth: string; password: string; phone?: string }) =>
     api.post<LoginResponse>('/auth/register', body),
 
   login: (body: { email: string; password: string }) =>

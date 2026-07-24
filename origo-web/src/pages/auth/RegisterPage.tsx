@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, AtSign } from 'lucide-react';
+import { User, Mail, Lock, AtSign, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AuthLayout from '../../components/layout/AuthLayout';
 import Input from '../../components/ui/Input';
@@ -9,7 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/endpoints';
 
 export default function RegisterPage() {
-  const [form, setForm] = useState({ name: '', username: '', email: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ name: '', username: '', email: '', dateOfBirth: '', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
   const { setAuth, setOnboardingEmail } = useAuthStore();
   const navigate = useNavigate();
@@ -43,6 +43,16 @@ export default function RegisterPage() {
       toast.error('Password must contain at least one number');
       return;
     }
+    if (!form.dateOfBirth) {
+      toast.error('Date of birth is required');
+      return;
+    }
+    const dob = new Date(form.dateOfBirth);
+    const age = Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    if (age < 18) {
+      toast.error('You must be 18 or older to join Origo');
+      return;
+    }
     if (form.password !== form.confirm) {
       toast.error('Passwords do not match');
       return;
@@ -50,7 +60,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const { data } = await authApi.register({ name: form.name, username: form.username, email: form.email, password: form.password });
+      const { data } = await authApi.register({ name: form.name, username: form.username, email: form.email, dateOfBirth: form.dateOfBirth, password: form.password });
       setAuth(data.user, data.accessToken, data.refreshToken);
       toast.success('Account created successfully!');
       navigate('/verify-college');
@@ -98,6 +108,7 @@ export default function RegisterPage() {
         <Input label="Full name" placeholder="Arjun Sharma" value={form.name} onChange={set('name')} icon={<User size={16} />} required />
         <Input label="Username" placeholder="arjun_sharma" value={form.username} onChange={set('username')} icon={<AtSign size={16} />} required />
         <Input label="Email" type="email" placeholder="you@gmail.com" value={form.email} onChange={set('email')} icon={<Mail size={16} />} required />
+        <Input label="Date of birth" type="date" value={form.dateOfBirth} onChange={set('dateOfBirth')} icon={<Calendar size={16} />} required />
         <Input label="Password" type="password" placeholder="Min 8 characters" value={form.password} onChange={set('password')} icon={<Lock size={16} />} required />
         <Input label="Confirm password" type="password" placeholder="Repeat password" value={form.confirm} onChange={set('confirm')} icon={<Lock size={16} />} required />
 

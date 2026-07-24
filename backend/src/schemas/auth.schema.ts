@@ -9,9 +9,9 @@ export const RegisterSchema = z.object({
     .min(8)
     .refine((p) => /[A-Z]/.test(p), 'Must contain uppercase letter')
     .refine((p) => /[0-9]/.test(p), 'Must contain a number'),
-  dateOfBirth: z.string().optional().refine((d) => {
-    if (!d) return true;
+  dateOfBirth: z.string().refine((d) => {
     const dob = new Date(d);
+    if (isNaN(dob.getTime())) return false;
     const age = Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
     return age >= 18;
   }, 'Must be 18 or older'),

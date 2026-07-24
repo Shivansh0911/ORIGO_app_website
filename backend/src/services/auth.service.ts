@@ -12,7 +12,6 @@ import { issueTokenPair, invalidateAllSessions } from '../utils/jwt';
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const DEVICE_ID_DEFAULT = 'web';
 
 export const AuthService = {
   async register(data: {
@@ -20,7 +19,7 @@ export const AuthService = {
     username: string;
     email: string;
     password: string;
-    dateOfBirth?: string;
+    dateOfBirth: string;
     ip: string;
     userAgent: string;
   }) {
@@ -55,10 +54,10 @@ export const AuthService = {
             name: data.name,
             username: usernameLower,
             passwordHash,
-            dateOfBirth: data.dateOfBirth ? encrypt(data.dateOfBirth) : null,
+            dateOfBirth: encrypt(data.dateOfBirth),
           },
         });
-        return issueTokenPair(user.id, DEVICE_ID_DEFAULT);
+        return issueTokenPair(user.id, crypto.randomUUID());
       }
       throw new Error('EMAIL_TAKEN');
     }
@@ -85,7 +84,7 @@ export const AuthService = {
           username: usernameLower,
           email: emailLower,
           passwordHash,
-          dateOfBirth: data.dateOfBirth ? encrypt(data.dateOfBirth) : null,
+          dateOfBirth: encrypt(data.dateOfBirth),
         },
       });
       await tx.userPrivacy.create({ data: { userId: u.id } });
@@ -94,7 +93,7 @@ export const AuthService = {
       });
       return u;
     });
-    return issueTokenPair(user.id, DEVICE_ID_DEFAULT);
+    return issueTokenPair(user.id, crypto.randomUUID());
   },
 
   async login(email: string, password: string) {
@@ -104,7 +103,7 @@ export const AuthService = {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new Error('INVALID_CREDENTIALS');
     if (!user.isActive) throw new Error('ACCOUNT_DISABLED');
-    return { tokens: await issueTokenPair(user.id, DEVICE_ID_DEFAULT), user };
+    return { tokens: await issueTokenPair(user.id, crypto.randomUUID()), user };
   },
 
   async googleAuth(idToken: string, ip: string, userAgent: string) {
@@ -156,7 +155,7 @@ export const AuthService = {
       });
     }
 
-    const tokens = await issueTokenPair(user.id, DEVICE_ID_DEFAULT);
+    const tokens = await issueTokenPair(user.id, crypto.randomUUID());
     return { tokens, user };
   },
 
