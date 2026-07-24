@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Compass, Zap, MessageCircle, Users, User, Bell, LogOut, GraduationCap } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -5,6 +6,7 @@ import { useNotificationStore } from '../../store/notificationStore';
 import { useSocketStore } from '../../store/socketStore';
 import { authApi } from '../../api/endpoints';
 import Avatar from '../ui/Avatar';
+import OnboardingGuide from '../ui/OnboardingGuide';
 
 const NAV = [
   { to: '/app/freshers', icon: GraduationCap, label: 'Freshers HQ', highlight: true },
@@ -21,6 +23,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const disconnect = useSocketStore((s) => s.disconnect);
   const navigate = useNavigate();
 
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('origo_onboarded'));
+  const handleOnboardingDone = () => {
+    localStorage.setItem('origo_onboarded', '1');
+    setShowOnboarding(false);
+  };
+
   const handleLogout = async () => {
     try { await authApi.logout(); } catch { /* ignore */ }
     disconnect();
@@ -29,6 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
+    <>
     <div className="flex h-screen bg-bg text-text-primary overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 flex flex-col border-r border-border shrink-0 bg-card/50">
@@ -107,5 +116,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
     </div>
+
+    {showOnboarding && <OnboardingGuide onDone={handleOnboardingDone} />}
+    </>
   );
 }
