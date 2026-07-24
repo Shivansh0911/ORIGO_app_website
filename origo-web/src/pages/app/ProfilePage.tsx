@@ -73,7 +73,7 @@ export default function ProfilePage() {
           to="/app/ship"
           className="flex items-center justify-center gap-2 py-3 bg-accent/10 border border-accent/30 hover:bg-accent/20 rounded-xl text-accent transition-all text-sm font-medium"
         >
-          <Heart size={16} /> Ship a Friend — ₹19
+          <Heart size={16} /> Ship a Friend — free now!
         </Link>
 
         {/* Looking For */}

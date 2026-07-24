@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { ArrowLeft, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { shipsApi, paymentsApi } from '../../api/endpoints';
+import { shipsApi } from '../../api/endpoints';
 import type { PublicUser } from '../../types';
 import Avatar from '../../components/ui/Avatar';
 import Spinner from '../../components/ui/Spinner';
 
-// PSEUDO: Razorpay must be loaded — see PremiumPage note
-declare const Razorpay: new (options: Record<string, unknown>) => { open(): void };
+// PAYMENTS DISABLED FOR V1 LAUNCH — re-enable + apply SEC-02 fix before turning on
+// import { paymentsApi } from '../../api/endpoints';
+// declare const Razorpay: new (options: Record<string, unknown>) => { open(): void };
 
 export default function ShipAFriendPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -23,7 +24,7 @@ export default function ShipAFriendPage() {
   });
 
   const shipMutation = useMutation({
-    mutationFn: (paymentId: string) => {
+    mutationFn: () => {
       const [t1, t2] = Array.from(selected);
       return shipsApi.create({ targetOneId: t1, targetTwoId: t2, message: hint || undefined });
     },
@@ -45,25 +46,12 @@ export default function ShipAFriendPage() {
     setSelected(n);
   };
 
-  const handlePay = async () => {
+  // PAYMENTS DISABLED FOR V1 LAUNCH — Ship is free; payment step removed
+  // When re-enabling: restore the Razorpay flow here and gate shipMutation on a verified payment
+  const handleShip = async () => {
     setProcessing(true);
     try {
-      const { data } = await paymentsApi.createShipOrder();
-      const rz = new Razorpay({
-        key: data.keyId,
-        amount: data.amount,
-        currency: data.currency,
-        name: 'Origo — Ship a Friend',
-        description: 'Anonymous ship suggestion · ₹19',
-        theme: { color: '#FF6B9D' },
-        handler: async (resp: Record<string, string>) => {
-          await paymentsApi.verifyIap({ orderId: resp.razorpay_order_id, paymentId: resp.razorpay_payment_id, signature: resp.razorpay_signature });
-          shipMutation.mutate(resp.razorpay_payment_id);
-        },
-      });
-      rz.open();
-    } catch {
-      toast.error('Payment failed. Try again.');
+      await shipMutation.mutateAsync();
     } finally {
       setProcessing(false);
     }
@@ -81,7 +69,7 @@ export default function ShipAFriendPage() {
         </button>
         <div>
           <h1 className="text-xl font-bold text-text-primary">Ship a Friend</h1>
-          <p className="text-text-muted text-sm">Secretly suggest a match · ₹19</p>
+          <p className="text-text-muted text-sm">Secretly suggest a match · free for v1</p>
         </div>
       </div>
 
@@ -145,14 +133,14 @@ export default function ShipAFriendPage() {
         </div>
 
         <button
-          onClick={handlePay}
+          onClick={handleShip}
           disabled={selected.size < 2 || processing || shipMutation.isPending}
           className="w-full py-3.5 bg-gradient-to-r from-accent to-primary text-white font-bold rounded-2xl transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
         >
           <Heart size={18} />
-          {processing ? 'Opening payment…' : 'Ship Them · ₹19'}
+          {processing || shipMutation.isPending ? 'Shipping…' : 'Ship Them (free for now!)'}
         </button>
-        <p className="text-center text-xs text-text-muted">Your identity stays anonymous · Powered by Razorpay</p>
+        <p className="text-center text-xs text-text-muted">Your identity stays anonymous</p>
       </div>
     </div>
   );
