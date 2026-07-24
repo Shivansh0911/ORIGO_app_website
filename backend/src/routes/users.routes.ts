@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { authMiddleware } from '../middleware/auth';
 import { UserService } from '../services/user.service';
+import { isSupabaseReady, uploadToSupabase } from '../utils/supabase';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 4 * 1024 * 1024 } });
@@ -16,13 +17,23 @@ router.patch('/me', authMiddleware, async (req, res) => {
   catch { res.status(400).json({ error: 'Update failed' }); }
 });
 
-// PSEUDO: For production, replace base64 storage with an object storage upload
-// (e.g. AWS S3 / Cloudflare R2 / Supabase Storage) and store the CDN URL instead.
 router.post('/me/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
   if (!req.file) { res.status(400).json({ error: 'No file uploaded' }); return; }
   const mime = req.file.mimetype;
   if (!mime.startsWith('image/')) { res.status(400).json({ error: 'Only image files are allowed' }); return; }
-  const avatarUrl = `data:${mime};base64,${req.file.buffer.toString('base64')}`;
+
+  let avatarUrl: string;
+  if (isSupabaseReady()) {
+    // PSEUDO: Supabase Storage — set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY to activate
+    try {
+      const ext = mime.split('/')[1] ?? 'jpg';
+      avatarUrl = await uploadToSupabase('origo', `avatars/${req.user!.userId}.${ext}`, req.file.buffer, mime);
+    } catch { res.status(500).json({ error: 'Upload to storage failed' }); return; }
+  } else {
+    // Fallback: base64 data URI (fine for dev; Supabase preferred for production)
+    avatarUrl = `data:${mime};base64,${req.file.buffer.toString('base64')}`;
+  }
+
   try {
     const user = await UserService.updateMe(req.user!.userId, { avatarUrl });
     res.json({ avatarUrl: (user as { avatarUrl?: string }).avatarUrl ?? avatarUrl });

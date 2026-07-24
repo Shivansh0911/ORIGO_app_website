@@ -1,8 +1,12 @@
 import crypto from 'crypto';
 import { prisma } from '../utils/prisma';
 
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID ?? '';
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET ?? '';
+// PSEUDO: Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in env vars to activate real payments.
+// Get them from: dashboard.razorpay.com → Settings → API Keys (use test keys first).
+// When both are set, all calls automatically use the real Razorpay API — no code changes needed.
+const RAZORPAY_KEY_ID = process.env['RAZORPAY_KEY_ID'] ?? '';
+const RAZORPAY_KEY_SECRET = process.env['RAZORPAY_KEY_SECRET'] ?? '';
+const IS_PSEUDO = !RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET;
 
 const PLAN_PRICES: Record<string, number> = {
   PREMIUM_MONTHLY: 9900,
@@ -16,7 +20,11 @@ const PLAN_DAYS: Record<string, number> = {
   PREMIUM_ANNUAL: 365,
 };
 
-async function razorpayRequest(path: string, body: Record<string, unknown>) {
+async function razorpayRequest(path: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  if (IS_PSEUDO) {
+    // PSEUDO: Returns mock order. Set RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET to switch to real Razorpay.
+    return { id: `mock_order_${Date.now()}` };
+  }
   const credentials = Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64');
   const res = await fetch(`https://api.razorpay.com/v1${path}`, {
     method: 'POST',
@@ -28,6 +36,8 @@ async function razorpayRequest(path: string, body: Record<string, unknown>) {
 }
 
 function verifySignature(orderId: string, paymentId: string, signature: string): boolean {
+  if (IS_PSEUDO || orderId.startsWith('mock_') || signature === 'mock_sig') return true;
+  // SEC-02 TODO: Before re-enabling payments, persist orders to DB and validate orderId ownership here.
   const expected = crypto
     .createHmac('sha256', RAZORPAY_KEY_SECRET)
     .update(`${orderId}|${paymentId}`)

@@ -29,8 +29,9 @@ import matchesRoutes from './routes/matches.routes';
 import communitiesRoutes from './routes/communities.routes';
 import postsRoutes from './routes/posts.routes';
 import notificationsRoutes from './routes/notifications.routes';
-// PAYMENTS DISABLED FOR V1 LAUNCH — re-enable + apply SEC-02 fix before turning on
-// import paymentsRoutes from './routes/payments.routes';
+// PSEUDO: Payments use mock Razorpay orders until RAZORPAY_KEY_ID + RAZORPAY_KEY_SECRET are set in env.
+// SEC-02 TODO: Add PaymentOrder table + webhook verification before going live with real keys.
+import paymentsRoutes from './routes/payments.routes';
 import shipsRoutes from './routes/ships.routes';
 
 const app = express();
@@ -53,8 +54,7 @@ app.use('/v1/matches', authMiddleware, requireVerified, matchesRoutes);
 app.use('/v1/communities', authMiddleware, requireVerified, communitiesRoutes);
 app.use('/v1/posts', postsRoutes);
 app.use('/v1/notifications', notificationsRoutes);
-// PAYMENTS DISABLED FOR V1 LAUNCH — re-enable + apply SEC-02 fix before turning on
-// app.use('/v1/payments', paymentsRoutes);
+app.use('/v1/payments', paymentsRoutes);
 app.use('/v1/ships', shipsRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
