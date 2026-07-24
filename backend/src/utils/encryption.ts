@@ -1,7 +1,16 @@
 import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
-const KEY = Buffer.from(process.env.FIELD_ENCRYPTION_KEY ?? '0'.repeat(64), 'hex');
+
+function loadEncryptionKey(): Buffer {
+  const raw = process.env['FIELD_ENCRYPTION_KEY'];
+  if (!raw || !/^[0-9a-fA-F]{64}$/.test(raw)) {
+    throw new Error('[startup] FIELD_ENCRYPTION_KEY must be a 64-character hex string (32 bytes)');
+  }
+  return Buffer.from(raw, 'hex');
+}
+
+const KEY = loadEncryptionKey();
 
 export function encrypt(plaintext: string): string {
   const iv = crypto.randomBytes(12);

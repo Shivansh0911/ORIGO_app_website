@@ -2,8 +2,14 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { redis } from './redis';
 
-const ACCESS_SECRET = process.env.JWT_SECRET ?? 'access-secret';
-const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? 'refresh-secret';
+function requireEnv(name: string): string {
+  const val = process.env[name];
+  if (!val) throw new Error(`[startup] Missing required env var: ${name}`);
+  return val;
+}
+
+const ACCESS_SECRET = requireEnv('JWT_SECRET');
+const REFRESH_SECRET = requireEnv('JWT_REFRESH_SECRET');
 const ACCESS_EXPIRES = '15m';
 const REFRESH_EXPIRES = '30d';
 const REFRESH_TTL = 30 * 24 * 60 * 60;

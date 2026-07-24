@@ -1,10 +1,22 @@
 import 'dotenv/config';
+
+function checkEnv(): void {
+  const required = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'FIELD_ENCRYPTION_KEY', 'DATABASE_URL'];
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length > 0) throw new Error(`[startup] Missing required env vars: ${missing.join(', ')}`);
+  if (!/^[0-9a-fA-F]{64}$/.test(process.env['FIELD_ENCRYPTION_KEY']!)) {
+    throw new Error('[startup] FIELD_ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes)');
+  }
+}
+checkEnv();
+
 import express, { Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 
 import { apiLimiter } from './middleware/rateLimiter';
+import { authMiddleware, requireVerified } from './middleware/auth';
 import { initSocket } from './socket';
 import { startRizzExpiryJob } from './jobs/rizzExpiry.job';
 
@@ -34,11 +46,11 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOS
 
 app.use('/v1/auth', authRoutes);
 app.use('/v1/users', usersRoutes);
-app.use('/v1/rizz', rizzRoutes);
-app.use('/v1/discover', discoverRoutes);
+app.use('/v1/rizz', authMiddleware, requireVerified, rizzRoutes);
+app.use('/v1/discover', authMiddleware, requireVerified, discoverRoutes);
 app.use('/v1/conversations', chatRoutes);
-app.use('/v1/matches', matchesRoutes);
-app.use('/v1/communities', communitiesRoutes);
+app.use('/v1/matches', authMiddleware, requireVerified, matchesRoutes);
+app.use('/v1/communities', authMiddleware, requireVerified, communitiesRoutes);
 app.use('/v1/posts', postsRoutes);
 app.use('/v1/notifications', notificationsRoutes);
 // PAYMENTS DISABLED FOR V1 LAUNCH — re-enable + apply SEC-02 fix before turning on
