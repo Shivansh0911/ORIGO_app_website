@@ -21,7 +21,7 @@ export const AuthController = {
           },
         },
       });
-      const { passwordHash, dateOfBirth, phone, collegeEmail, firebaseUid, pushToken, ...safeUser } = fullUser!;
+      const { passwordHash, dateOfBirth, phone, collegeEmail, collegeEmailHash, firebaseUid, pushToken, ...safeUser } = fullUser!;
 
       res.status(201).json({
         ...tokens,
@@ -48,7 +48,7 @@ export const AuthController = {
           },
         },
       });
-      const { passwordHash, dateOfBirth, phone, collegeEmail, firebaseUid, pushToken, ...safeUser } = fullUser!;
+      const { passwordHash, dateOfBirth, phone, collegeEmail, collegeEmailHash, firebaseUid, pushToken, ...safeUser } = fullUser!;
 
       res.json({
         ...tokens,
@@ -102,16 +102,39 @@ export const AuthController = {
     try {
       const { idToken } = req.body as { idToken: string };
       if (!idToken) { res.status(400).json({ error: 'idToken required' }); return; }
-      const { tokens, user } = await AuthService.googleAuth(
+      const { tokens, user: rawUser } = await AuthService.googleAuth(
         idToken,
         req.ip ?? 'unknown',
         req.headers['user-agent'] ?? 'unknown',
       );
-      res.json({ ...tokens, userId: user.id, user });
+      const fullUser = await prisma.user.findUnique({
+        where: { id: rawUser.id },
+        include: { interests: { include: { interest: true } } },
+      });
+      const { passwordHash, dateOfBirth, phone, collegeEmail, collegeEmailHash, firebaseUid, pushToken, ...safeUser } = fullUser!;
+      res.json({ ...tokens, user: { ...safeUser, needsDob: !dateOfBirth } });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Google auth failed';
       const status = msg === 'ACCOUNT_DISABLED' ? 403 : msg.startsWith('INVALID') ? 401 : 400;
       res.status(status).json({ error: msg });
+    }
+  },
+
+  async setDob(req: Request, res: Response): Promise<void> {
+    try {
+      const { dateOfBirth } = req.body as { dateOfBirth: string };
+      if (!dateOfBirth) { res.status(400).json({ error: 'dateOfBirth required' }); return; }
+      const dob = new Date(dateOfBirth);
+      const age = (Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+      if (age < 18) { res.status(400).json({ error: 'Must be 18 or older' }); return; }
+      const { encrypt } = await import('../utils/encryption');
+      await prisma.user.update({
+        where: { id: req.user!.userId },
+        data: { dateOfBirth: encrypt(dateOfBirth) },
+      });
+      res.json({ message: 'Date of birth saved' });
+    } catch {
+      res.status(500).json({ error: 'Failed to save date of birth' });
     }
   },
 

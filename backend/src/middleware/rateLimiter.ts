@@ -53,3 +53,11 @@ export const rizzLimiter = rateLimit({
   keyGenerator: (req) => req.user?.userId ?? req.ip ?? 'unknown',
   message: { error: 'Rizz rate limit reached.' },
 });
+
+export const pulseLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  store: redisStore('pulse', 60 * 60 * 1000),
+  keyGenerator: (req) => req.user?.userId ?? req.ip ?? 'unknown',
+  message: { error: 'Pulse limit reached. You can post up to 5 pulses per hour.' },
+});

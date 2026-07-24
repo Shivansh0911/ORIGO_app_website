@@ -11,6 +11,7 @@ export interface User {
   isPremium: boolean;
   interests: UserInterest[];
   lastSeen: string | null;
+  needsDob?: boolean;
 }
 
 export interface PublicUser {
@@ -155,6 +156,32 @@ export interface LoginResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
+}
+
+export type PulseCategory = 'CHILL' | 'MOVE' | 'PLAY' | 'TALK' | 'GROW' | 'DATE_PRACTICE';
+export type PulseStatus = 'ACTIVE' | 'EXPIRED' | 'FULFILLED' | 'CANCELLED';
+
+export interface Pulse {
+  id: string;
+  authorId: string;
+  author: Pick<PublicUser, 'id' | 'name' | 'username' | 'avatarUrl' | 'isVerified'>;
+  category: PulseCategory;
+  text: string;
+  vibe: string | null;
+  status: PulseStatus;
+  collegeName: string | null;
+  expiresAt: string;
+  createdAt: string;
+  hasResponded?: boolean;
+  responses?: { id: string }[];
+}
+
+export interface PulseResponse {
+  id: string;
+  pulseId: string;
+  responderId: string;
+  rizzSessionId: string | null;
+  createdAt: string;
 }
 
 export type OnboardingStep =

@@ -110,7 +110,25 @@ enum NotifType {
   EVENT_REMINDER
   PROFILE_BOOST_EXPIRED
   NEW_MESSAGE
+  NEW_PULSE_RESPONSE
+  PULSE_EXPIRING
   SYSTEM
+}
+
+enum PulseCategory {
+  CHILL
+  MOVE
+  PLAY
+  TALK
+  GROW
+  DATE_PRACTICE
+}
+
+enum PulseStatus {
+  ACTIVE
+  EXPIRED
+  FULFILLED
+  CANCELLED
 }
 
 enum AllowFrom {
@@ -157,7 +175,8 @@ model User {
   gender          Gender?
   lookingFor      LookingFor[]
   collegeName     String?
-  collegeEmail    String?   @unique
+  collegeEmail     String?   @unique
+  collegeEmailHash String?   @unique   // SEC-03: deterministic HMAC blind index for dedup lookups
   isVerified      Boolean   @default(false)
   verifiedAt      DateTime?
   studentIdUrl    String?
@@ -194,6 +213,8 @@ model User {
   rizzMessages    RizzMessage[]
   postLikes       PostLike[]
   consentLogs     ConsentLog[]
+  pulses          Pulse[]         @relation("PulseAuthor")
+  pulseResponses  PulseResponse[] @relation("PulseResponder")
 }
 
 model Interest {
@@ -475,4 +496,33 @@ model DeletionAuditLog {
   userId    String
   deletedAt DateTime @default(now())
   reason    String?
+}
+
+model Pulse {
+  id          String        @id @default(cuid())
+  authorId    String
+  category    PulseCategory
+  text        String        @db.VarChar(140)
+  vibe        String?       @db.VarChar(60)
+  status      PulseStatus   @default(ACTIVE)
+  collegeName String?
+  expiresAt   DateTime
+  createdAt   DateTime      @default(now())
+  author      User          @relation("PulseAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  responses   PulseResponse[]
+
+  @@index([collegeName, status, expiresAt])
+  @@index([authorId, status])
+}
+
+model PulseResponse {
+  id            String   @id @default(cuid())
+  pulseId       String
+  responderId   String
+  rizzSessionId String?
+  createdAt     DateTime @default(now())
+  pulse         Pulse    @relation(fields: [pulseId], references: [id], onDelete: Cascade)
+  responder     User     @relation("PulseResponder", fields: [responderId], references: [id], onDelete: Cascade)
+
+  @@unique([pulseId, responderId])
 }

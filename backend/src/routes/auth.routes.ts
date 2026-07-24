@@ -14,6 +14,7 @@ router.post('/google', authLimiter, AuthController.googleAuth);
 router.post('/login', authLimiter, validate(LoginSchema), AuthController.login);
 router.post('/refresh', AuthController.refresh);
 router.post('/logout', authMiddleware, AuthController.logout);
+router.post('/set-dob', authMiddleware, AuthController.setDob);
 router.post('/verify-college-email', authMiddleware, otpLimiter, validate(CollegeEmailSchema), AuthController.verifyCollegeEmail);
 router.post('/confirm-college-otp', authMiddleware, validate(OtpSchema), AuthController.confirmOtp);
 router.post('/upload-student-id', authMiddleware, upload.single('file'), async (req, res) => {

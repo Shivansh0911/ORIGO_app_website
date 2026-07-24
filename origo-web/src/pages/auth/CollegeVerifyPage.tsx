@@ -54,8 +54,6 @@ export default function CollegeVerifyPage() {
     }
   };
 
-  const skip = () => navigate('/interests');
-
   return (
     <AuthLayout>
       <div className="flex items-center gap-2 mb-1">
@@ -105,9 +103,6 @@ export default function CollegeVerifyPage() {
         </form>
       )}
 
-      <button onClick={skip} className="w-full text-center text-text-muted text-sm mt-4 hover:text-text-secondary transition-colors">
-        Skip for now →
-      </button>
     </AuthLayout>
   );
 }

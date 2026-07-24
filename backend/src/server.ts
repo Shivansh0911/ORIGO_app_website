@@ -1,11 +1,14 @@
 import 'dotenv/config';
 
 function checkEnv(): void {
-  const required = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'FIELD_ENCRYPTION_KEY', 'DATABASE_URL'];
+  const required = ['JWT_SECRET', 'JWT_REFRESH_SECRET', 'FIELD_ENCRYPTION_KEY', 'BLIND_INDEX_KEY', 'DATABASE_URL'];
   const missing = required.filter((k) => !process.env[k]);
   if (missing.length > 0) throw new Error(`[startup] Missing required env vars: ${missing.join(', ')}`);
   if (!/^[0-9a-fA-F]{64}$/.test(process.env['FIELD_ENCRYPTION_KEY']!)) {
     throw new Error('[startup] FIELD_ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes)');
+  }
+  if (!/^[0-9a-fA-F]{64}$/.test(process.env['BLIND_INDEX_KEY']!)) {
+    throw new Error('[startup] BLIND_INDEX_KEY must be exactly 64 hex characters (32 bytes)');
   }
 }
 checkEnv();
@@ -19,6 +22,7 @@ import { apiLimiter } from './middleware/rateLimiter';
 import { authMiddleware, requireVerified } from './middleware/auth';
 import { initSocket } from './socket';
 import { startRizzExpiryJob } from './jobs/rizzExpiry.job';
+import { startPulseExpiryJob } from './jobs/pulseExpiry.job';
 
 import authRoutes from './routes/auth.routes';
 import usersRoutes from './routes/users.routes';
@@ -33,6 +37,7 @@ import notificationsRoutes from './routes/notifications.routes';
 // SEC-02 TODO: Add PaymentOrder table + webhook verification before going live with real keys.
 import paymentsRoutes from './routes/payments.routes';
 import shipsRoutes from './routes/ships.routes';
+import pulseRoutes from './routes/pulse.routes';
 
 const app = express();
 const httpServer = createServer(app);
@@ -56,6 +61,7 @@ app.use('/v1/posts', postsRoutes);
 app.use('/v1/notifications', notificationsRoutes);
 app.use('/v1/payments', paymentsRoutes);
 app.use('/v1/ships', shipsRoutes);
+app.use('/v1/pulse', authMiddleware, requireVerified, pulseRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
 
@@ -69,6 +75,7 @@ const PORT = parseInt(process.env['PORT'] ?? '3001', 10);
 
 initSocket(httpServer);
 startRizzExpiryJob();
+startPulseExpiryJob();
 
 httpServer.listen(PORT, () => {
   console.log(`\n🚀 Origo backend → http://localhost:${PORT}`);

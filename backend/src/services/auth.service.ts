@@ -5,6 +5,8 @@ import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../utils/prisma';
 import { redis } from '../utils/redis';
 import { encrypt, decrypt } from '../utils/encryption';
+import { hashForIndex } from '../utils/blindIndex';
+import { findCollegeByEmail } from '../config/collegeDomains';
 import { issueTokenPair, invalidateAllSessions } from '../utils/jwt';
 
 // PSEUDO: Set GOOGLE_CLIENT_ID in Railway env vars
@@ -169,10 +171,17 @@ export const AuthService = {
   },
 
   async verifyCollegeEmail(userId: string, collegeEmail: string) {
-    const existing = await prisma.user.findFirst({ where: { collegeEmail: encrypt(collegeEmail) } });
+    // SEC-04: reject domains not on the campus allowlist
+    const college = findCollegeByEmail(collegeEmail);
+    if (!college) throw new Error('UNRECOGNISED_COLLEGE_DOMAIN');
+
+    // SEC-03: use blind index for dedup — encrypt() uses random IV so direct lookup never matches
+    const emailHash = hashForIndex(collegeEmail);
+    const existing = await prisma.user.findUnique({ where: { collegeEmailHash: emailHash } });
     if (existing && existing.id !== userId) throw new Error('COLLEGE_EMAIL_TAKEN');
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await redis.set(`otp:${userId}`, otp, 'EX', 300);
+    await redis.set(`otp_email:${userId}`, collegeEmail.toLowerCase().trim(), 'EX', 300);
     try {
       if (process.env.NODE_ENV === 'development') {
         console.log(`\n🔑 [DEV ONLY] Verification OTP for user ${userId} (${collegeEmail}) is: ${otp}\n`);
@@ -198,10 +207,20 @@ export const AuthService = {
     const stored = await redis.get(`otp:${userId}`);
     if (!stored || stored !== otp) throw new Error('INVALID_OTP');
     await redis.del(`otp:${userId}`);
-    await prisma.user.update({
-      where: { id: userId },
-      data: { isVerified: true, verifiedAt: new Date() },
-    });
+
+    // Retrieve the college email stored in the temp key so we can persist hash + collegeName
+    const collegeEmail = await redis.get(`otp_email:${userId}`);
+    await redis.del(`otp_email:${userId}`);
+
+    const updates: Record<string, unknown> = { isVerified: true, verifiedAt: new Date() };
+    if (collegeEmail) {
+      updates.collegeEmail = encrypt(collegeEmail);
+      updates.collegeEmailHash = hashForIndex(collegeEmail);
+      const college = findCollegeByEmail(collegeEmail);
+      if (college) updates.collegeName = college.collegeName;
+    }
+
+    await prisma.user.update({ where: { id: userId }, data: updates as Parameters<typeof prisma.user.update>[0]['data'] });
     return { message: 'Email verified' };
   },
 

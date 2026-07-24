@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Compass, Zap, MessageCircle, Users, User, Bell, LogOut, GraduationCap } from 'lucide-react';
+import { Compass, Zap, MessageCircle, Users, User, Bell, LogOut, GraduationCap, Radio } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
 import { useSocketStore } from '../../store/socketStore';
@@ -14,6 +14,7 @@ const NAV = [
   { to: '/app/rizz', icon: Zap, label: 'Rizz In 5' },
   { to: '/app/messages', icon: MessageCircle, label: 'Messages' },
   { to: '/app/communities', icon: Users, label: 'Communities' },
+  { to: '/app/pulse', icon: Radio, label: 'Pulse' },
   { to: '/app/profile', icon: User, label: 'Profile' },
 ];
 

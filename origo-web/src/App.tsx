@@ -24,6 +24,7 @@ import ConsentBanner from './components/consent/ConsentBanner';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import CollegeVerifyPage from './pages/auth/CollegeVerifyPage';
+import DobSetupPage from './pages/auth/DobSetupPage';
 import InterestPickerPage from './pages/auth/InterestPickerPage';
 import LookingForPage from './pages/auth/LookingForPage';
 import ProfileSetupPage from './pages/auth/ProfileSetupPage';
@@ -42,6 +43,7 @@ import PremiumPage from './pages/app/PremiumPage';
 import SettingsPage from './pages/app/SettingsPage';
 import ShipAFriendPage from './pages/app/ShipAFriendPage';
 import NotificationsPage from './pages/app/NotificationsPage';
+import PulsePage from './pages/app/PulsePage';
 
 // Freshers-season pages
 import FreshersPage from './pages/app/FreshersPage';
@@ -52,6 +54,12 @@ import SeniorConnectPage from './pages/app/SeniorConnectPage';
 import WeMetPage from './pages/app/WeMetPage';
 
 function AppRoutes() {
+  const { user } = useAuthStore();
+
+  // Redirect unverified users to complete their setup before accessing the app
+  if (user?.needsDob) return <Navigate to="/dob-setup" replace />;
+  if (user && !user.isVerified) return <Navigate to="/verify-college" replace />;
+
   return (
     <ProtectedRoute>
       <AppLayout>
@@ -75,6 +83,7 @@ function AppRoutes() {
           <Route path="settings" element={<SettingsPage />} />
           <Route path="ship" element={<ShipAFriendPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
+          <Route path="pulse" element={<PulsePage />} />
           <Route path="*" element={<Navigate to="discover" replace />} />
         </Routes>
       </AppLayout>
@@ -120,6 +129,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify-college" element={<ProtectedRoute><CollegeVerifyPage /></ProtectedRoute>} />
+      <Route path="/dob-setup" element={<ProtectedRoute><DobSetupPage /></ProtectedRoute>} />
       <Route path="/interests" element={<ProtectedRoute><InterestPickerPage /></ProtectedRoute>} />
       <Route path="/looking-for" element={<ProtectedRoute><LookingForPage /></ProtectedRoute>} />
       <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetupPage /></ProtectedRoute>} />

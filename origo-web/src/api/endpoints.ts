@@ -3,6 +3,7 @@ import type {
   User, PublicUser, Interest, RizzSession, RizzMessage,
   Conversation, Message, Community, Post, Comment,
   CommunityEvent, Notification, Ship, LoginResponse,
+  Pulse, PulseResponse, PulseCategory,
 } from '../types';
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -23,6 +24,9 @@ export const authApi = {
 
   googleAuth: (idToken: string) =>
     api.post<LoginResponse>('/auth/google', { idToken }),
+
+  setDob: (body: { dateOfBirth: string }) =>
+    api.post<{ message: string }>('/auth/set-dob', body),
 
   deleteAccount: () => api.delete('/auth/account'),
 };
@@ -167,6 +171,22 @@ export const paymentsApi = {
 
   verifyIap: (body: { orderId: string; paymentId: string; signature: string }) =>
     api.post('/payments/iap/verify', body),
+};
+
+// ── Pulse ─────────────────────────────────────────────────────────────────────
+export const pulseApi = {
+  getFeed: () => api.get<Pulse[]>('/pulse/feed'),
+
+  getMine: () => api.get<Pulse | null>('/pulse/mine'),
+
+  create: (body: { category: PulseCategory; text: string; vibe?: string }) =>
+    api.post<Pulse>('/pulse', body),
+
+  respond: (pulseId: string) =>
+    api.post<PulseResponse>(`/pulse/${pulseId}/respond`),
+
+  cancel: (pulseId: string) =>
+    api.delete(`/pulse/${pulseId}`),
 };
 
 // ── Ships ─────────────────────────────────────────────────────────────────────

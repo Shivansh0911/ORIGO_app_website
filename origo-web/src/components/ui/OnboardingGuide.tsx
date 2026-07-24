@@ -1,36 +1,42 @@
 import { useState } from 'react';
+import { Hand, Compass, Zap, HeartHandshake, Users } from 'lucide-react';
 
 const SLIDES = [
   {
-    emoji: '👋',
+    Icon: Hand,
+    iconClass: 'text-primary',
     title: 'Welcome to Origo',
     desc: 'The campus social app built for Indian students. Make real connections — not just followers.',
     color: 'from-primary/10 to-accent/10',
     dot: 'bg-primary',
   },
   {
-    emoji: '🧭',
+    Icon: Compass,
+    iconClass: 'text-blue-500',
     title: 'Discover People',
     desc: 'Browse students from your campus who share your interests, course, or vibe. Swipe, connect, match.',
     color: 'from-blue-50 to-indigo-50',
     dot: 'bg-blue-500',
   },
   {
-    emoji: '⚡',
+    Icon: Zap,
+    iconClass: 'text-yellow-500',
     title: 'Rizz in 5',
-    desc: 'Nervous about the first message? Get 5 AI-crafted icebreakers tailored to who you\'re talking to.',
+    desc: "Nervous about the first message? Get 5 AI-crafted icebreakers tailored to who you're talking to.",
     color: 'from-yellow-50 to-orange-50',
     dot: 'bg-yellow-500',
   },
   {
-    emoji: '💕',
+    Icon: HeartHandshake,
+    iconClass: 'text-pink-500',
     title: 'Ship a Friend',
     desc: 'Think two people would be perfect together? Anonymously suggest the match — let love take care of the rest.',
     color: 'from-pink-50 to-rose-50',
     dot: 'bg-pink-500',
   },
   {
-    emoji: '👥',
+    Icon: Users,
+    iconClass: 'text-green-600',
     title: 'Communities',
     desc: 'Join groups built around what you love — from coding clubs to chai addas. Post, comment, belong.',
     color: 'from-green-50 to-emerald-50',
@@ -46,6 +52,7 @@ export default function OnboardingGuide({ onDone }: Props) {
   const [idx, setIdx] = useState(0);
   const slide = SLIDES[idx]!;
   const isLast = idx === SLIDES.length - 1;
+  const { Icon } = slide;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -71,7 +78,9 @@ export default function OnboardingGuide({ onDone }: Props) {
 
         {/* Slide content */}
         <div className={`bg-gradient-to-br ${slide.color} px-8 pt-16 pb-10 flex flex-col items-center text-center min-h-[360px]`}>
-          <div className="text-7xl mb-6 select-none">{slide.emoji}</div>
+          <div className="mb-6 p-5 bg-white/60 rounded-full shadow-sm">
+            <Icon size={52} className={slide.iconClass} strokeWidth={1.5} />
+          </div>
           <h2 className="text-2xl font-bold text-text-primary mb-3">{slide.title}</h2>
           <p className="text-text-secondary text-sm leading-relaxed">{slide.desc}</p>
         </div>
