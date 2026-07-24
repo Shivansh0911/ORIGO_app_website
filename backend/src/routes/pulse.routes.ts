@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { PulseCategory } from '@prisma/client';
 import { PulseService } from '../services/pulse.service';
 import { pulseLimiter } from '../middleware/rateLimiter';
+import { validate } from '../middleware/validate';
+import { CreatePulseSchema } from '../schemas/pulse.schema';
 
 const router = Router();
 
@@ -23,12 +24,10 @@ router.get('/mine', async (req, res) => {
   }
 });
 
-router.post('/', pulseLimiter, async (req, res) => {
+// VAL-01: Zod validates category enum and length caps before the service runs
+router.post('/', pulseLimiter, validate(CreatePulseSchema), async (req, res) => {
   try {
-    const { category, text, vibe } = req.body as { category: PulseCategory; text: string; vibe?: string };
-    if (!category || !text?.trim()) { res.status(400).json({ error: 'category and text are required' }); return; }
-    if (text.length > 140) { res.status(400).json({ error: 'text must be 140 characters or fewer' }); return; }
-    const pulse = await PulseService.createPulse(req.user!.userId, { category, text: text.trim(), vibe });
+    const pulse = await PulseService.createPulse(req.user!.userId, req.body);
     res.status(201).json(pulse);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to create pulse';

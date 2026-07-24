@@ -16,11 +16,19 @@ export const UserService = {
   },
 
   async updateMe(userId: string, data: {
-    name?: string; bio?: string; gender?: string; lookingFor?: string[]; avatarUrl?: string; collegeName?: string; pushToken?: string;
+    name?: string; bio?: string; gender?: string; lookingFor?: string[]; avatarUrl?: string; pushToken?: string;
   }) {
+    // SEC-16: explicitly pick — never spread req.body directly into a Prisma write
+    const safe: Record<string, unknown> = {};
+    if (data.name      !== undefined) safe['name']       = data.name;
+    if (data.bio       !== undefined) safe['bio']        = data.bio;
+    if (data.gender    !== undefined) safe['gender']     = data.gender;
+    if (data.lookingFor !== undefined) safe['lookingFor'] = data.lookingFor;
+    if (data.avatarUrl !== undefined) safe['avatarUrl']  = data.avatarUrl;
+    if (data.pushToken !== undefined) safe['pushToken']  = data.pushToken;
     return prisma.user.update({
       where: { id: userId },
-      data: { ...data } as Parameters<typeof prisma.user.update>[0]['data'],
+      data: safe as Parameters<typeof prisma.user.update>[0]['data'],
     });
   },
 

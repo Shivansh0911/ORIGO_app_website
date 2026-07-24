@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // PSEUDO: Replace with your Railway backend URL in .env → VITE_API_URL=https://your-railway-url.up.railway.app
-const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000';
+const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
 
 export const api = axios.create({
   baseURL: `${BASE_URL}/v1`,
