@@ -162,6 +162,9 @@ export const paymentsApi = {
       '/payments/ship/order',
     ),
 
+  verifySubscription: (body: { plan: string; razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
+    api.post('/payments/subscription/verify', body),
+
   verifyIap: (body: { orderId: string; paymentId: string; signature: string }) =>
     api.post('/payments/iap/verify', body),
 };

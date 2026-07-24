@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { ArrowLeft, Check, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-
-// PAYMENTS DISABLED FOR V1 LAUNCH — re-enable + apply SEC-02 fix before turning on
-// import { paymentsApi } from '../../api/endpoints';
-// declare const Razorpay: new (options: Record<string, unknown>) => { open(): void };
+import { paymentsApi } from '../../api/endpoints';
+import { openPayment } from '../../lib/payment';
+import toast from 'react-hot-toast';
 
 const PLANS = [
   { id: 'monthly', label: 'Monthly', price: 99, period: '/month', tag: null },
@@ -22,13 +21,43 @@ const PERKS = [
   { icon: '🎨', title: 'Profile Themes', desc: 'Customise your profile card aesthetic' },
 ];
 
+// PSEUDO: Plan IDs must match backend PLAN_PRICES keys exactly
+const PLAN_MAP: Record<string, string> = {
+  monthly: 'PREMIUM_MONTHLY',
+  quarterly: 'PREMIUM_QUARTERLY',
+  annual: 'PREMIUM_ANNUAL',
+};
+
 export default function PremiumPage() {
   const [selected, setSelected] = useState('quarterly');
+  const [loading, setLoading] = useState(false);
   const { user } = useAuthStore();
   const navigate = useNavigate();
 
-  // PAYMENTS DISABLED FOR V1 LAUNCH — re-enable + apply SEC-02 fix before turning on
-  // const handleSubscribe = async () => { ... Razorpay flow ... };
+  const handleSubscribe = async () => {
+    setLoading(true);
+    try {
+      const planId = PLAN_MAP[selected] ?? 'PREMIUM_QUARTERLY';
+      const { data: order } = await paymentsApi.createSubscriptionOrder(planId);
+      // PSEUDO: openPayment uses mock flow when VITE_RAZORPAY_KEY_ID not set
+      const payment = await openPayment({
+        orderId: order.orderId,
+        amount: order.amount,
+        keyId: order.keyId,
+        name: 'Origo Premium',
+        description: `${PLANS.find(p => PLAN_MAP[p.id] === planId)?.label ?? 'Premium'} plan`,
+        prefill: { name: user?.name, email: undefined },
+      });
+      await paymentsApi.verifySubscription({ plan: planId, razorpay_order_id: payment.razorpay_order_id, razorpay_payment_id: payment.razorpay_payment_id, razorpay_signature: payment.razorpay_signature });
+      toast.success('Premium activated! 🎉');
+      navigate('/app/profile');
+    } catch (err: unknown) {
+      const msg = (err as Error).message;
+      if (msg !== 'Payment cancelled') toast.error('Payment failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -98,17 +127,17 @@ export default function PremiumPage() {
             <p className="text-text-muted text-sm mt-0.5">Enjoy all premium features.</p>
           </div>
         ) : (
-          // PAYMENTS DISABLED FOR V1 LAUNCH — replace this block with the Razorpay flow above
           <button
-            disabled
-            className="w-full py-4 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-2xl opacity-50 text-base cursor-not-allowed"
+            onClick={handleSubscribe}
+            disabled={loading}
+            className="w-full py-4 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-2xl transition-opacity disabled:opacity-60 text-base"
           >
-            Coming soon · Payments launching shortly
+            {loading ? 'Processing…' : `Get Premium · ₹${PLANS.find(p => p.id === selected)?.price ?? '—'}`}
           </button>
         )}
 
         <p className="text-center text-xs text-text-muted pb-4">
-          Payments coming soon · Powered by Razorpay
+          Secure payments · Powered by Razorpay
         </p>
       </div>
     </div>
