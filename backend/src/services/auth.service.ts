@@ -246,6 +246,9 @@ export const AuthService = {
       prisma.subscription.deleteMany({ where: { userId } }),
       prisma.profileBoost.deleteMany({ where: { userId } }),
       prisma.userPrivacy.deleteMany({ where: { userId } }),
+      // SEC-13: pulse data must be removed on DPDP deletion
+      prisma.pulseResponse.deleteMany({ where: { responderId: userId } }),
+      prisma.pulse.deleteMany({ where: { authorId: userId } }),
       prisma.user.update({ where: { id: userId }, data: { isActive: false, email: `deleted_${userId}@deleted.origo` } }),
     ]);
     await invalidateAllSessions(userId);

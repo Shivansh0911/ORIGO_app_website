@@ -1,6 +1,7 @@
 import { RizzStatus } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { redis } from '../utils/redis';
+import { moderateText } from '../utils/moderateText';
 
 export const RizzService = {
   async startSession(initiatorId: string, targetId: string) {
@@ -60,6 +61,7 @@ export const RizzService = {
     const isInitiator = session.initiatorId === senderId;
     const isTarget = session.targetId === senderId;
     if (!isInitiator && !isTarget) throw new Error('NOT_IN_SESSION');
+    moderateText(content);
 
     let conversationId: string | undefined;
 

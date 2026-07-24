@@ -5,7 +5,7 @@ import { Users, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { communitiesApi } from '../../api/endpoints';
 import type { Community } from '../../types';
-import Spinner from '../../components/ui/Spinner';
+import { CardSkeleton } from '../../components/ui/Skeleton';
 import EmptyState from '../../components/ui/EmptyState';
 
 function CommunityCard({ community }: { community: Community }) {
@@ -106,9 +106,9 @@ export default function CommunitiesPage() {
 
       <div className="flex-1 overflow-y-auto px-6 py-4">
         {isLoading ? (
-          <div className="flex justify-center py-12"><Spinner /></div>
+          <div className="grid grid-cols-1 gap-3">{[1,2,3].map((i) => <CardSkeleton key={i} />)}</div>
         ) : filtered.length === 0 ? (
-          <EmptyState icon="🏘️" title="No communities found" />
+          <EmptyState icon="🏘️" title="No communities found" description="Try a different search or check back later" />
         ) : (
           <>
             {joined.length > 0 && (

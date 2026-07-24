@@ -24,6 +24,7 @@ import { initSocket } from './socket';
 import { startRizzExpiryJob } from './jobs/rizzExpiry.job';
 import { startPulseExpiryJob } from './jobs/pulseExpiry.job';
 
+import { ModerationError } from './utils/moderateText';
 import authRoutes from './routes/auth.routes';
 import usersRoutes from './routes/users.routes';
 import rizzRoutes from './routes/rizz.routes';
@@ -43,7 +44,23 @@ const app = express();
 const httpServer = createServer(app);
 
 app.use(helmet());
-app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') ?? '*', credentials: true }));
+
+// SEC-11: never fall back to '*' with credentials — browsers reject that combo
+// Set ALLOWED_ORIGINS=https://your-domain.com,https://app.yourdomain.com in production
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim())
+  ?? (process.env.NODE_ENV === 'production'
+      ? [] // will 403 unrecognised origins in prod if env not set — correct, not a silent bug
+      : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4173']);
+
+app.use(cors({
+  origin: (origin, cb) => {
+    // Allow server-to-server / curl (no Origin header)
+    if (!origin) return cb(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(apiLimiter);
@@ -67,6 +84,9 @@ app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  if (err instanceof ModerationError) {
+    return res.status(422).json({ error: 'CONTENT_MODERATION_FAILED' });
+  }
   console.error('[Error]', err.stack);
   res.status(500).json({ error: 'Internal server error' });
 });

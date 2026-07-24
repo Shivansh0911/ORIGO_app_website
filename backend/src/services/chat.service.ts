@@ -1,5 +1,6 @@
 import { prisma } from '../utils/prisma';
 import { getIO } from '../socket';
+import { moderateText } from '../utils/moderateText';
 
 export const ChatService = {
   async getConversations(userId: string) {
@@ -64,6 +65,7 @@ export const ChatService = {
       where: { conversationId_userId: { conversationId, userId: senderId } },
     });
     if (!participant) throw new Error('FORBIDDEN');
+    if (messageType === 'TEXT') moderateText(content);
 
     const message = await prisma.message.create({
       data: { conversationId, senderId, content, mediaUrl, messageType },

@@ -53,7 +53,6 @@ function SessionRow({ session, myId }: { session: RizzSession; myId: string }) {
       </div>
       <div className="text-right shrink-0">
         <p className="text-xs text-text-muted">{formatDistanceToNow(new Date(session.createdAt), { addSuffix: true })}</p>
-        <p className="text-xs text-text-muted mt-0.5">{session.messageCount}/5 msgs</p>
       </div>
     </Link>
   );

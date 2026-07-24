@@ -12,8 +12,9 @@ import Spinner from '../../components/ui/Spinner';
 import type { RizzMessage } from '../../types';
 
 function RizzBar({ count, status }: { count: number; status: string }) {
+  const isFinalShot = count === 4 && status === 'ACTIVE';
   const labels: Record<string, string> = {
-    ACTIVE: count >= 5 ? 'Waiting for reply…' : `${5 - count} messages left`,
+    ACTIVE: count >= 5 ? 'Waiting for reply…' : isFinalShot ? '🔥 Final shot!' : `${5 - count} messages left`,
     WAITING: 'Waiting for them to reply',
     UNLOCKED: 'Chat unlocked! 🎉',
     DECLINED: 'Session declined',
@@ -22,16 +23,26 @@ function RizzBar({ count, status }: { count: number; status: string }) {
   return (
     <div className="bg-muted border-b border-border px-4 py-2.5 flex items-center justify-between">
       <div className="flex gap-1.5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div
-            key={i}
-            className={`h-2 w-8 rounded-full transition-all ${
-              i < count ? (i >= 3 ? 'bg-amber-400' : 'bg-primary') : 'bg-border'
-            }`}
-          />
-        ))}
+        {Array.from({ length: 5 }).map((_, i) => {
+          const filled = i < count;
+          const isLast = i === 4;
+          return (
+            <div
+              key={i}
+              className={`h-2 w-8 rounded-full transition-all ${
+                filled
+                  ? i >= 3 ? 'bg-amber-400' : 'bg-primary'
+                  : isLast && isFinalShot
+                  ? 'bg-red-400 animate-pulse'
+                  : 'bg-border'
+              }`}
+            />
+          );
+        })}
       </div>
-      <p className="text-xs text-text-secondary">{labels[status] ?? ''}</p>
+      <p className={`text-xs font-medium ${isFinalShot ? 'text-red-500' : 'text-text-secondary'}`}>
+        {labels[status] ?? ''}
+      </p>
     </div>
   );
 }

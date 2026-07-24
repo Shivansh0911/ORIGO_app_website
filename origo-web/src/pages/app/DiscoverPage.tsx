@@ -10,7 +10,7 @@ import {
   type Intent, type ScoredUser, type Viewer, type CommunityRef,
 } from '../../lib/matching';
 import { track } from '../../lib/telemetry';
-import Spinner from '../../components/ui/Spinner';
+import { DiscoverSkeleton } from '../../components/ui/Skeleton';
 import EmptyState from '../../components/ui/EmptyState';
 
 const INTENTS: { key: Intent; label: string; emoji: string }[] = [
@@ -259,7 +259,7 @@ export default function DiscoverPage() {
   };
 
   if (isLoading) return (
-    <div className="flex items-center justify-center h-full"><Spinner size="lg" /></div>
+    <div className="p-4 max-w-sm mx-auto"><DiscoverSkeleton /></div>
   );
 
   return (

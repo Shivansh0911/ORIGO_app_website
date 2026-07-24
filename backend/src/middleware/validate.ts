@@ -13,3 +13,16 @@ export function validate(schema: ZodSchema) {
     next();
   };
 }
+
+export function validateQuery(schema: ZodSchema) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const result = schema.safeParse(req.query);
+    if (!result.success) {
+      const errors = (result.error as ZodError).flatten().fieldErrors;
+      res.status(400).json({ error: 'Validation failed', fields: errors });
+      return;
+    }
+    req.query = result.data as Record<string, string>;
+    next();
+  };
+}

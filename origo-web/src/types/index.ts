@@ -135,7 +135,7 @@ export interface Notification {
   body: string;
   isRead: boolean;
   createdAt: string;
-  meta: Record<string, string> | null;
+  data: Record<string, string> | null;
 }
 
 export interface Ship {

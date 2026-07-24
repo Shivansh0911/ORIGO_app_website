@@ -1,10 +1,14 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
+import { validateQuery } from '../middleware/validate';
 import { NotificationService } from '../services/notification.service';
 
 const router = Router();
 
-router.get('/', authMiddleware, async (req, res) => {
+const NotifCursorQuery = z.object({ cursor: z.string().cuid().optional() });
+
+router.get('/', authMiddleware, validateQuery(NotifCursorQuery), async (req, res) => {
   try {
     const cursor = req.query['cursor'] as string | undefined;
     res.json(await NotificationService.getForUser(req.user!.userId, cursor));

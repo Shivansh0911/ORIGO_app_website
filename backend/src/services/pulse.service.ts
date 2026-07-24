@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { PulseCategory } from '@prisma/client';
 import { prisma } from '../utils/prisma';
+import { moderateText } from '../utils/moderateText';
 
 const PULSE_TTL_HOURS = 3;
 
@@ -15,6 +16,7 @@ export const PulseService = {
       where: { authorId, status: 'ACTIVE', expiresAt: { gt: new Date() } },
     });
     if (activePulse) throw new Error('ACTIVE_PULSE_EXISTS');
+    moderateText(data.text, data.vibe);
 
     const author = await prisma.user.findUnique({
       where: { id: authorId },

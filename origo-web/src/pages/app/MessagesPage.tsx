@@ -7,7 +7,7 @@ import { conversationsApi } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import type { Conversation } from '../../types';
 import Avatar from '../../components/ui/Avatar';
-import Spinner from '../../components/ui/Spinner';
+import { RowSkeleton } from '../../components/ui/Skeleton';
 import EmptyState from '../../components/ui/EmptyState';
 
 function ConvRow({ conv, myId }: { conv: Conversation; myId: string }) {
@@ -77,7 +77,7 @@ export default function MessagesPage() {
 
       <div className="flex-1 overflow-y-auto p-2">
         {isLoading ? (
-          <div className="flex justify-center py-12"><Spinner /></div>
+          <div className="space-y-1 pt-2">{[1,2,3,4].map((i) => <RowSkeleton key={i} />)}</div>
         ) : filtered.length === 0 ? (
           <EmptyState
             icon="💬"

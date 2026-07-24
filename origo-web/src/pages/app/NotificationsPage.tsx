@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell, CheckCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -10,18 +11,38 @@ import Spinner from '../../components/ui/Spinner';
 import EmptyState from '../../components/ui/EmptyState';
 
 const TYPE_ICONS: Record<string, string> = {
-  MATCH_REQUEST: '💕',
+  MATCH_REQUEST:  '💕',
   MATCH_ACCEPTED: '🎉',
-  RIZZ_MESSAGE: '⚡',
-  RIZZ_UNLOCKED: '🔓',
-  SHIP_RECEIVED: '🚀',
+  RIZZ_MESSAGE:   '⚡',
+  RIZZ_UNLOCKED:  '🔓',
+  SHIP_RECEIVED:  '🚀',
   COMMUNITY_POST: '📝',
-  DEFAULT: '🔔',
+  PULSE_RESPONSE: '📡',
+  PULSE_EXPIRING: '⏳',
+  DEFAULT:        '🔔',
 };
+
+function getNavPath(n: Notification): string | null {
+  const d = n.data;
+  switch (n.type) {
+    case 'RIZZ_MESSAGE':
+    case 'RIZZ_UNLOCKED':
+      return d?.sessionId ? `/app/rizz/${d.sessionId}` : '/app/rizz';
+    case 'PULSE_RESPONSE':
+    case 'PULSE_EXPIRING':
+      return '/app/pulse';
+    case 'MATCH_REQUEST':
+    case 'MATCH_ACCEPTED':
+      return '/app/matches';
+    default:
+      return null;
+  }
+}
 
 export default function NotificationsPage() {
   const qc = useQueryClient();
   const reset = useNotificationStore((s) => s.reset);
+  const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
     queryKey: ['notifications'],
@@ -30,7 +51,6 @@ export default function NotificationsPage() {
 
   const notifications: Notification[] = data ?? [];
 
-  // Reset badge when page is opened
   useEffect(() => { reset(); }, [reset]);
 
   const markOne = useMutation({
@@ -48,6 +68,12 @@ export default function NotificationsPage() {
   });
 
   const unread = notifications.filter((n) => !n.isRead);
+
+  function handleTap(n: Notification) {
+    if (!n.isRead) markOne.mutate(n.id);
+    const path = getNavPath(n);
+    if (path) navigate(path);
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -80,7 +106,7 @@ export default function NotificationsPage() {
             {notifications.map((n) => (
               <button
                 key={n.id}
-                onClick={() => !n.isRead && markOne.mutate(n.id)}
+                onClick={() => handleTap(n)}
                 className={`w-full flex items-start gap-3 p-3.5 rounded-xl text-left transition-colors ${n.isRead ? 'opacity-60 hover:bg-primary/10' : 'bg-primary/5 hover:bg-primary/10'}`}
               >
                 <span className="text-xl mt-0.5">{TYPE_ICONS[n.type] ?? TYPE_ICONS.DEFAULT}</span>

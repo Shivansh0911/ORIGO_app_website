@@ -1,18 +1,23 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
+import { validateQuery } from '../middleware/validate';
 import { DiscoverService } from '../services/discover.service';
 
 const router = Router();
 
-router.get('/people', authMiddleware, async (req, res) => {
+const DiscoverPeopleQuery = z.object({
+  page:       z.coerce.number().int().min(1).max(100).optional().default(1),
+  gender:     z.enum(['MALE', 'FEMALE', 'NON_BINARY', 'PREFER_NOT_TO_SAY']).optional(),
+  lookingFor: z.enum(['FRIENDS', 'DATING', 'NETWORKING', 'STUDY_BUDDY']).optional(),
+  college:    z.string().max(120).optional(),
+});
+
+router.get('/people', authMiddleware, validateQuery(DiscoverPeopleQuery), async (req, res) => {
   try {
-    const page = parseInt(req.query['page'] as string) || 1;
-    const filters = {
-      gender: req.query['gender'] as string | undefined,
-      lookingFor: req.query['lookingFor'] as string | undefined,
-      collegeName: req.query['college'] as string | undefined,
-    };
-    const users = await DiscoverService.getPeople(req.user!.userId, filters, page);
+    const { page, gender, lookingFor, college } = req.query as z.infer<typeof DiscoverPeopleQuery> & Record<string, string>;
+    const filters = { gender, lookingFor, collegeName: college };
+    const users = await DiscoverService.getPeople(req.user!.userId, filters, Number(page ?? 1));
     res.json(users);
   } catch (e: unknown) {
     res.status(400).json({ error: e instanceof Error ? e.message : 'Failed' });

@@ -1,5 +1,6 @@
 import { prisma } from '../utils/prisma';
 import { encrypt, decrypt } from '../utils/encryption';
+import { moderateText } from '../utils/moderateText';
 
 export const UserService = {
   async getMe(userId: string) {
@@ -19,6 +20,7 @@ export const UserService = {
     name?: string; bio?: string; gender?: string; lookingFor?: string[]; avatarUrl?: string; pushToken?: string;
   }) {
     // SEC-16: explicitly pick — never spread req.body directly into a Prisma write
+    moderateText(data.bio, data.name);
     const safe: Record<string, unknown> = {};
     if (data.name      !== undefined) safe['name']       = data.name;
     if (data.bio       !== undefined) safe['bio']        = data.bio;

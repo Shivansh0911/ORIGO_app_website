@@ -1,4 +1,7 @@
 import { prisma } from '../utils/prisma';
+import { moderateText, ModerationError } from '../utils/moderateText';
+
+export { ModerationError };
 
 export const CommunityService = {
   async list(userId: string, filter?: string) {
@@ -55,6 +58,7 @@ export const CommunityService = {
       where: { communityId_userId: { communityId, userId: authorId } },
     });
     if (!membership) throw new Error('NOT_MEMBER');
+    moderateText(content);
     return prisma.post.create({ data: { communityId, authorId, content, mediaUrls } });
   },
 
@@ -83,6 +87,7 @@ export const CommunityService = {
   },
 
   async addComment(postId: string, authorId: string, content: string) {
+    moderateText(content);
     const [comment] = await prisma.$transaction([
       prisma.comment.create({ data: { postId, authorId, content } }),
       prisma.post.update({ where: { id: postId }, data: { commentCount: { increment: 1 } } }),
