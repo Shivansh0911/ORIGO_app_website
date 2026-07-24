@@ -68,8 +68,8 @@ export const matchesApi = {
   sendMatch: (receiverId: string) =>
     api.post<{ id: string; status: string }>('/matches', { receiverId }),
 
-  respondMatch: (matchId: string, action: 'ACCEPT' | 'DECLINE') =>
-    api.patch(`/matches/${matchId}`, { action }),
+  respondMatch: (matchId: string, accept: boolean) =>
+    api.post(`/matches/${matchId}/respond`, { accept }),
 
   getMatches: () => api.get('/matches'),
 
@@ -82,8 +82,8 @@ export const rizzApi = {
 
   getSession: (id: string) => api.get<RizzSession>(`/rizz/sessions/${id}`),
 
-  startSession: (receiverId: string) =>
-    api.post<RizzSession>('/rizz/sessions', { receiverId }),
+  startSession: (targetId: string) =>
+    api.post<RizzSession>('/rizz/sessions', { targetId }),
 
   sendMessage: (sessionId: string, content: string) =>
     api.post<RizzMessage>(`/rizz/sessions/${sessionId}/messages`, { content }),
@@ -117,7 +117,7 @@ export const communitiesApi = {
 
   join: (id: string) => api.post(`/communities/${id}/join`),
 
-  leave: (id: string) => api.delete(`/communities/${id}/join`),
+  leave: (id: string) => api.delete(`/communities/${id}/leave`),
 
   getPosts: (id: string, params?: { page?: number }) =>
     api.get<Post[]>(`/communities/${id}/posts`, { params }),
@@ -144,17 +144,17 @@ export const communitiesApi = {
 // ── Notifications ─────────────────────────────────────────────────────────────
 export const notificationsApi = {
   getAll: () => api.get<Notification[]>('/notifications'),
-  getUnreadCount: () => api.get<{ count: number }>('/notifications/unread-count'),
+  getUnreadCount: () => api.get<{ count: number }>('/notifications/count'),
   markRead: (id: string) => api.patch(`/notifications/${id}/read`),
   markAllRead: () => api.patch('/notifications/read-all'),
 };
 
 // ── Payments ──────────────────────────────────────────────────────────────────
 export const paymentsApi = {
-  createSubscriptionOrder: (planId: string) =>
+  createSubscriptionOrder: (plan: string) =>
     api.post<{ orderId: string; amount: number; currency: string; keyId: string }>(
       '/payments/subscription/order',
-      { planId },
+      { plan },
     ),
 
   createShipOrder: () =>

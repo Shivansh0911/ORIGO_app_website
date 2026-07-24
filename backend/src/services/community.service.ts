@@ -74,6 +74,14 @@ export const CommunityService = {
     return { liked: true };
   },
 
+  async getComments(postId: string) {
+    return prisma.comment.findMany({
+      where: { postId },
+      include: { author: { select: { id: true, name: true, username: true, avatarUrl: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+  },
+
   async addComment(postId: string, authorId: string, content: string) {
     const [comment] = await prisma.$transaction([
       prisma.comment.create({ data: { postId, authorId, content } }),
