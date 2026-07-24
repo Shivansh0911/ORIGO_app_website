@@ -30,11 +30,21 @@ export function initSocket(httpServer: HttpServer): SocketServer {
     await redis.set(`online:${userId}`, '1', 'EX', 3600);
     await prisma.user.update({ where: { id: userId }, data: { isOnline: true } }).catch(() => {});
 
-    socket.on('join_conversation', (conversationId: string) => {
+    socket.on('join_conversation', async (conversationId: string) => {
+      const membership = await prisma.conversationParticipant.findUnique({
+        where: { conversationId_userId: { conversationId, userId } },
+        select: { conversationId: true },
+      }).catch(() => null);
+      if (!membership) { socket.emit('error', { message: 'Not a participant in this conversation' }); return; }
       socket.join(`conversation:${conversationId}`);
     });
 
     socket.on('send_message', async (data: { conversationId: string; content: string }) => {
+      const membership = await prisma.conversationParticipant.findUnique({
+        where: { conversationId_userId: { conversationId: data.conversationId, userId } },
+        select: { conversationId: true },
+      }).catch(() => null);
+      if (!membership) { socket.emit('error', { message: 'Not a participant in this conversation' }); return; }
       io.to(`conversation:${data.conversationId}`).emit('new_message', {
         conversationId: data.conversationId,
         content: data.content,
