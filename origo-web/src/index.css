@@ -40,3 +40,15 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-track { background: #EFEDFF; }
 ::-webkit-scrollbar-thumb { background: #DDD8F0; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #6C3DFF; }
+
+/* iPhone home indicator safe area */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Prevent text size adjustment on mobile */
+html { -webkit-text-size-adjust: 100%; }
+
+/* Hide desktop scrollbar on mobile */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar { display: none; }
+  body { scrollbar-width: none; }
+}

@@ -115,7 +115,7 @@ export default function ChatPage() {
           return (
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-xs ${
+                className={`max-w-[75%] sm:max-w-xs ${
                   msg.type === 'STICKER'
                     ? 'text-4xl p-2'
                     : `px-4 py-2.5 rounded-2xl text-sm ${

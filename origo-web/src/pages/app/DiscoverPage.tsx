@@ -300,7 +300,7 @@ export default function DiscoverPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex items-start justify-center pt-8 px-4">
+      <div className="flex-1 flex items-start justify-center pt-4 md:pt-8 px-4">
         <AnimatePresence mode="wait">
           {current ? (
             <ProfileCard key={current.id} user={current} onLike={handleLike} onPass={handlePass} onRizz={handleRizz} />

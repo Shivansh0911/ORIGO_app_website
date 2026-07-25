@@ -149,7 +149,7 @@ export default function RizzChatPage() {
           return (
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-xs px-4 py-2.5 rounded-2xl text-sm ${
+                className={`max-w-[75%] sm:max-w-xs px-4 py-2.5 rounded-2xl text-sm ${
                   isMe ? 'bg-primary text-white rounded-br-sm' : 'bg-card border border-border text-text-primary rounded-bl-sm'
                 }`}
               >
