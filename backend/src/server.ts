@@ -63,9 +63,9 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(apiLimiter);
-
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString(), version: '1.0.0' }));
+
+app.use(apiLimiter);
 
 app.use('/v1/auth', authRoutes);
 app.use('/v1/users', usersRoutes);

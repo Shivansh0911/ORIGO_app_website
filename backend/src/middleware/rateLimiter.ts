@@ -5,16 +5,21 @@ function redisStore(prefix: string, windowMs: number) {
   const windowSeconds = Math.ceil(windowMs / 1000);
   return {
     async increment(key: string) {
-      const fullKey = `rl:${prefix}:${key}`;
-      const count = await redis.incr(fullKey);
-      if (count === 1) await redis.expire(fullKey, windowSeconds);
-      return { totalHits: count, resetTime: new Date(Date.now() + windowMs) };
+      try {
+        const fullKey = `rl:${prefix}:${key}`;
+        const count = await redis.incr(fullKey);
+        if (count === 1) await redis.expire(fullKey, windowSeconds);
+        return { totalHits: count, resetTime: new Date(Date.now() + windowMs) };
+      } catch {
+        // Redis unavailable — fail open (no rate limiting) rather than crashing requests
+        return { totalHits: 1, resetTime: new Date(Date.now() + windowMs) };
+      }
     },
     async decrement(key: string) {
-      await redis.decr(`rl:${prefix}:${key}`);
+      try { await redis.decr(`rl:${prefix}:${key}`); } catch {}
     },
     async resetKey(key: string) {
-      await redis.del(`rl:${prefix}:${key}`);
+      try { await redis.del(`rl:${prefix}:${key}`); } catch {}
     },
   };
 }

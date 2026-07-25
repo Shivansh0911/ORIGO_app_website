@@ -12,7 +12,7 @@ const CATEGORIES: { value: PulseCategory; label: string; desc: string }[] = [
 ];
 
 const PLACEHOLDERS: Record<PulseCategory, string[]> = {
-  CHILL:         ['Anyone free to just sit at the canteen?', 'Hostel lobby, who's around?'],
+  CHILL:         ['Anyone free to just sit at the canteen?', "Hostel lobby, who's around?"],
   MOVE:          ['Going for a walk in 20 mins', 'Anyone up for a quick badminton game?'],
   PLAY:          ['FIFA sesh, Hostel D common room', 'Movie night in my room, DM me'],
   TALK:          ['Need someone to vent to rn', 'Study buddy wanted for finals week'],
