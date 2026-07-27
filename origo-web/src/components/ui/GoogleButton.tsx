@@ -40,8 +40,17 @@ export default function GoogleButton() {
         try {
           const { data } = await authApi.googleAuth(credential);
           setAuth(data.user, data.accessToken, data.refreshToken);
-          toast.success('Signed in with Google!');
-          navigate('/app/discover', { replace: true });
+          if (data.user.isVerified) {
+            // Signed in with a resolvable college Google Workspace account —
+            // the backend already verified them from the hosted-domain claim.
+            toast.success(`Signed in with Google — welcome, ${data.user.collegeName ?? 'verified student'}!`);
+            navigate('/app/discover', { replace: true });
+          } else {
+            // Personal Google account (e.g. gmail.com) — still needs to prove
+            // college affiliation like the email/password signup path does.
+            toast.success('Signed in with Google! One more step — verify your college email.');
+            navigate('/verify-college', { replace: true });
+          }
         } catch (err: unknown) {
           const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error;
           toast.error(msg === 'ACCOUNT_DISABLED' ? 'Your account has been disabled.' : 'Google sign-in failed. Try again.');

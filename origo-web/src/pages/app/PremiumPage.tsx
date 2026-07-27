@@ -7,9 +7,9 @@ import { openPayment } from '../../lib/payment';
 import toast from 'react-hot-toast';
 
 const PLANS = [
-  { id: 'monthly', label: 'Monthly', price: 99, period: '/month', tag: null },
-  { id: 'quarterly', label: 'Quarterly', price: 249, period: '/3 months', tag: 'Save 16%' },
-  { id: 'annual', label: 'Annual', price: 799, period: '/year', tag: 'Best Value 🔥' },
+  { id: 'monthly', backendPlan: 'PREMIUM_MONTHLY' as const, label: 'Monthly', price: 99, period: '/month', tag: null },
+  { id: 'quarterly', backendPlan: 'PREMIUM_QUARTERLY' as const, label: 'Quarterly', price: 249, period: '/3 months', tag: 'Save 16%' },
+  { id: 'annual', backendPlan: 'PREMIUM_ANNUAL' as const, label: 'Annual', price: 799, period: '/year', tag: 'Best Value 🔥' },
 ];
 
 const PERKS = [
@@ -21,34 +21,34 @@ const PERKS = [
   { icon: '🎨', title: 'Profile Themes', desc: 'Customise your profile card aesthetic' },
 ];
 
-// PSEUDO: Plan IDs must match backend PLAN_PRICES keys exactly
-const PLAN_MAP: Record<string, string> = {
-  monthly: 'PREMIUM_MONTHLY',
-  quarterly: 'PREMIUM_QUARTERLY',
-  annual: 'PREMIUM_ANNUAL',
-};
-
 export default function PremiumPage() {
   const [selected, setSelected] = useState('quarterly');
   const [loading, setLoading] = useState(false);
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubscribe = async () => {
+    const plan = PLANS.find((p) => p.id === selected);
+    if (!plan) return;
     setLoading(true);
     try {
-      const planId = PLAN_MAP[selected] ?? 'PREMIUM_QUARTERLY';
-      const { data: order } = await paymentsApi.createSubscriptionOrder(planId);
+      const { data: order } = await paymentsApi.createSubscriptionOrder(plan.backendPlan);
       // PSEUDO: openPayment uses mock flow when VITE_RAZORPAY_KEY_ID not set
       const payment = await openPayment({
         orderId: order.orderId,
         amount: order.amount,
         keyId: order.keyId,
         name: 'Origo Premium',
-        description: `${PLANS.find(p => PLAN_MAP[p.id] === planId)?.label ?? 'Premium'} plan`,
+        description: `${plan.label} subscription`,
         prefill: { name: user?.name, email: undefined },
       });
-      await paymentsApi.verifySubscription({ plan: planId, razorpay_order_id: payment.razorpay_order_id, razorpay_payment_id: payment.razorpay_payment_id, razorpay_signature: payment.razorpay_signature });
+      await paymentsApi.verifySubscription({
+        plan: plan.backendPlan,
+        razorpay_order_id: payment.razorpay_order_id,
+        razorpay_payment_id: payment.razorpay_payment_id,
+        razorpay_signature: payment.razorpay_signature,
+      });
+      if (user) setUser({ ...user, isPremium: true });
       toast.success('Premium activated! 🎉');
       navigate('/app/profile');
     } catch (err: unknown) {
