@@ -2,18 +2,32 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { Resend } from 'resend';
 import { OAuth2Client } from 'google-auth-library';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { redis } from '../utils/redis';
 import { encrypt, decrypt } from '../utils/encryption';
 import { hashForIndex } from '../utils/blindIndex';
 import { findCollegeByEmail } from '../config/collegeDomains';
 import { issueTokenPair, invalidateAllSessions } from '../utils/jwt';
+import { resolveCollegeFromWorkspaceDomain } from '../utils/collegeDomains';
 
 // PSEUDO: Set GOOGLE_CLIENT_ID in Railway env vars
 // → Get it from console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client ID
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Matches RegisterSchema's username rule (3-20 chars, lowercase/digits/underscore)
+// so a Google-derived username can't slip past constraints normal signup enforces.
+function sanitizeUsername(raw: string): string {
+  const cleaned = raw
+    .toLowerCase()
+    .replace(/[^a-z0-9\s_]/g, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .slice(0, 16);
+  return cleaned.length >= 3 ? cleaned : `${cleaned}${crypto.randomBytes(3).toString('hex')}`.slice(0, 16);
+}
 
 export const AuthService = {
   async register(data: {
@@ -117,8 +131,20 @@ export const AuthService = {
     const payload = ticket.getPayload();
     if (!payload?.sub) throw new Error('INVALID_GOOGLE_TOKEN');
 
-    const { sub: googleId, email, name, picture } = payload;
+    const { sub: googleId, email, email_verified: emailVerified, name, picture, hd } = payload;
     if (!email) throw new Error('GOOGLE_NO_EMAIL');
+    // Google's own guidance: don't trust the email claim unless this is
+    // explicitly true. We use `email` both to link/create accounts and (via
+    // `hd` below) to auto-verify college status, so an unverified claim here
+    // would let someone skip both the password *and* the OTP check.
+    if (emailVerified === false) throw new Error('GOOGLE_EMAIL_NOT_VERIFIED');
+
+    // `hd` (hosted domain) is only present for Google Workspace / G Suite
+    // accounts — i.e. issued and controlled by the institution itself. A
+    // personal Gmail address never carries it. Resolving it here is what lets
+    // a real college Google account skip the manual OTP step; a personal
+    // account still has to go through /verify-college like everyone else.
+    const campus = resolveCollegeFromWorkspaceDomain(hd);
 
     // 2. Find existing user by googleId, then fall back to email match (link accounts)
     let user = await prisma.user.findUnique({ where: { googleId } })
@@ -126,13 +152,26 @@ export const AuthService = {
 
     if (user) {
       // Link googleId to existing account if not already linked
-      if (!user.googleId) {
-        user = await prisma.user.update({ where: { id: user.id }, data: { googleId } });
+      const updates: Prisma.UserUpdateInput = {};
+      if (!user.googleId) updates.googleId = googleId;
+      // Upgrade to verified if they signed in with a resolvable college
+      // Workspace account and hadn't already verified another way.
+      if (campus && !user.isVerified) {
+        updates.isVerified = true;
+        updates.verifiedAt = new Date();
+        if (!user.collegeName) updates.collegeName = campus.collegeName;
+        if (!user.collegeEmail) {
+          updates.collegeEmail = encrypt(email);
+          updates.collegeEmailHash = hashForIndex(email);
+        }
+      }
+      if (Object.keys(updates).length > 0) {
+        user = await prisma.user.update({ where: { id: user.id }, data: updates });
       }
       if (!user.isActive) throw new Error('ACCOUNT_DISABLED');
     } else {
       // 3. Create new user from Google profile
-      const base = (name ?? email.split('@')[0]).toLowerCase().replace(/\s+/g, '_');
+      const base = sanitizeUsername(name ?? email.split('@')[0]);
       let username = base;
       let attempt = 0;
       while (await prisma.user.findUnique({ where: { username } })) {
@@ -147,6 +186,15 @@ export const AuthService = {
             passwordHash: null,
             googleId,
             avatarUrl: picture ?? null,
+            ...(campus
+              ? {
+                  isVerified: true,
+                  verifiedAt: new Date(),
+                  collegeName: campus.collegeName,
+                  collegeEmail: encrypt(email),
+                  collegeEmailHash: hashForIndex(email),
+                }
+              : {}),
           },
         });
         await tx.userPrivacy.create({ data: { userId: u.id } });
