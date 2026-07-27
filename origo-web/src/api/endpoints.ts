@@ -155,19 +155,26 @@ export const notificationsApi = {
 
 // ── Payments ──────────────────────────────────────────────────────────────────
 export const paymentsApi = {
-  createSubscriptionOrder: (plan: string) =>
+  createSubscriptionOrder: (plan: 'PREMIUM_MONTHLY' | 'PREMIUM_QUARTERLY' | 'PREMIUM_ANNUAL') =>
     api.post<{ orderId: string; amount: number; currency: string; keyId: string }>(
       '/payments/subscription/order',
       { plan },
     ),
+
+  verifySubscription: (body: {
+    plan: 'PREMIUM_MONTHLY' | 'PREMIUM_QUARTERLY' | 'PREMIUM_ANNUAL';
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) => api.post<{ message: string; expiresAt: string }>('/payments/subscription/verify', body),
 
   createShipOrder: () =>
     api.post<{ orderId: string; amount: number; currency: string; keyId: string }>(
       '/payments/ship/order',
     ),
 
-  verifySubscription: (body: { plan: string; razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
-    api.post('/payments/subscription/verify', body),
+  verifyShipOrder: (body: { orderId: string; paymentId: string; signature: string }) =>
+    api.post('/payments/ship/verify', body),
 
   verifyIap: (body: { orderId: string; paymentId: string; signature: string }) =>
     api.post('/payments/iap/verify', body),
