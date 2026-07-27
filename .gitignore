@@ -9,6 +9,9 @@ node_modules/
 .env.local
 .env.*.local
 
+# Personal / local-only notes (never shared, never committed)
+*.local.md
+
 # Build outputs
 dist/
 build/
@@ -41,3 +44,5 @@ origo-app/ios/
 # Uploads / temp
 uploads/
 tmp/
+
+*.prompt
