@@ -360,9 +360,19 @@ export function rankCandidates(
   return selected;
 }
 
-/** Derive a sensible default intent from the viewer's lookingFor list. */
+/**
+ * Derive a default intent from the viewer's lookingFor list.
+ *
+ * FRIENDS deliberately outranks DATING. Origo is a campus socialising
+ * platform where romance is one outcome among several — not a dating app.
+ * A user who selects both should land in the social feed by default and
+ * choose dating explicitly, because whichever surface opens by default is
+ * the category the product gets filed under in a user's head. Ordering
+ * DATING first here quietly made Origo a dating app for every user who
+ * ticked both boxes.
+ */
 export function primaryIntent(lookingFor: string[]): Intent {
-  const order: Intent[] = ['DATING', 'FRIENDS', 'NETWORKING', 'STUDY_BUDDY'];
+  const order: Intent[] = ['FRIENDS', 'NETWORKING', 'STUDY_BUDDY', 'DATING'];
   for (const intent of order) if (lookingFor.includes(intent)) return intent;
   return 'FRIENDS';
 }

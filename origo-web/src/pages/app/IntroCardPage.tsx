@@ -177,7 +177,7 @@ export default function IntroCardPage() {
                   key={t.id}
                   onClick={() => setTheme(t)}
                   className={`w-11 h-11 rounded-full border-2 transition-transform ${theme.id === t.id ? 'border-white scale-110' : 'border-transparent'}`}
-                  style={{ background: `linear-gradient(135deg, ${t.from}, ${t.to})` }}
+                  style={{ background: `linear-gradient(135deg, ${t.stops.join(', ')})` }}
                   title={t.label}
                   aria-label={t.label}
                 />
