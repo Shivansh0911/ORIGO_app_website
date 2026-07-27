@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   Compass, Zap, MessageCircle, Users, User, Bell, LogOut,
-  GraduationCap, Radio, X, Menu,
+  GraduationCap, Radio, X, Menu, BadgeCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
@@ -68,10 +68,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           ${drawerOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Origo
-          </span>
-          <button onClick={() => setDrawerOpen(false)} className="text-text-muted hover:text-primary">
+          <div className="min-w-0">
+            <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Origo
+            </span>
+            {user?.collegeName ? (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {user.isVerified && <BadgeCheck size={13} className="text-primary shrink-0" />}
+                <p className="text-xs text-text-secondary truncate">{user.collegeName}</p>
+              </div>
+            ) : (
+              <p className="text-xs text-text-muted mt-0.5">Campus social</p>
+            )}
+          </div>
+          <button onClick={() => setDrawerOpen(false)} className="text-text-muted hover:text-primary shrink-0">
             <X size={20} />
           </button>
         </div>
@@ -141,7 +151,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Origo
             </span>
-            <p className="text-xs text-text-muted mt-0.5">Campus social</p>
+            {user?.collegeName ? (
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {user.isVerified && <BadgeCheck size={13} className="text-primary shrink-0" />}
+                <p className="text-xs text-text-secondary truncate">{user.collegeName}</p>
+              </div>
+            ) : (
+              <p className="text-xs text-text-muted mt-0.5">Campus social</p>
+            )}
           </div>
 
           <nav className="flex-1 px-3 py-4 space-y-1">
