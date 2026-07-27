@@ -158,6 +158,14 @@ enum ReportStatus {
   DISMISSED
 }
 
+enum IapItem {
+  SHIP
+  STICKER_BASIC
+  STICKER_PREMIUM
+  RIZZ_PACK
+  VIEW_SHIPS
+}
+
 // ─── Models ─────────────────────────────────────────────────────────────────
 
 model User {
@@ -215,6 +223,7 @@ model User {
   consentLogs     ConsentLog[]
   pulses          Pulse[]         @relation("PulseAuthor")
   pulseResponses  PulseResponse[] @relation("PulseResponder")
+  iapPurchases    IapPurchase[]
 }
 
 model Interest {
@@ -525,4 +534,23 @@ model PulseResponse {
   responder     User     @relation("PulseResponder", fields: [responderId], references: [id], onDelete: Cascade)
 
   @@unique([pulseId, responderId])
+}
+
+// Tracks every Razorpay order raised for a non-subscription IAP item, from
+// creation through signature-verification through redemption. `verifiedAt`
+// means the Razorpay signature checked out; `consumedAt` means the thing it
+// paid for was actually granted. Kept as two separate timestamps so a SHIP
+// order can be verified once but only ever redeemed for exactly one ship.
+model IapPurchase {
+  id                String    @id @default(cuid())
+  userId            String
+  item              IapItem
+  razorpayOrderId   String    @unique
+  razorpayPaymentId String?
+  verifiedAt        DateTime?
+  consumedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, item])
 }

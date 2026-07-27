@@ -2,6 +2,10 @@ import { prisma } from '../utils/prisma';
 import { NotificationService } from './notification.service';
 
 export const ShipService = {
+  // SHIP FREE FOR V1 LAUNCH — no payment required. When re-enabled, require a
+  // verified, not-yet-consumed IapPurchase (item: 'SHIP') for the given orderId
+  // and consume it atomically with ship creation (see payment.service.ts /
+  // IapPurchase — the plumbing already exists, just isn't wired in here).
   async createShip(initiatorId: string, targetOneId: string, targetTwoId: string, message?: string) {
     if (targetOneId === targetTwoId) throw new Error('SAME_TARGET');
     if (initiatorId === targetOneId || initiatorId === targetTwoId) throw new Error('CANNOT_SHIP_SELF');

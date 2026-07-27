@@ -57,8 +57,11 @@ router.post('/ship/order', authMiddleware, async (req, res) => {
 router.post('/ship/verify', authMiddleware,
   validate(z.object({ orderId: z.string(), paymentId: z.string(), signature: z.string() })),
   async (req, res) => {
-    try { res.json(await PaymentService.verifyShipOrder(req.body.orderId, req.body.paymentId, req.body.signature)); }
-    catch { res.status(400).json({ error: 'Verification failed' }); }
+    try { res.json(await PaymentService.verifyShipOrder(req.user!.userId, req.body.orderId, req.body.paymentId, req.body.signature)); }
+    catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Verification failed';
+      res.status(msg === 'PURCHASE_NOT_FOUND' ? 404 : 400).json({ error: msg });
+    }
   }
 );
 
@@ -83,12 +86,16 @@ router.post('/view-ships/order', authMiddleware, async (req, res) => {
   catch { res.status(500).json({ error: 'Failed' }); }
 });
 
-// Generic IAP verify
+// Generic IAP verify (Sticker / Rizz Pack / View Ships — not Premium or Ship,
+// which each have their own dedicated verify endpoint above)
 router.post('/iap/verify', authMiddleware,
   validate(z.object({ orderId: z.string(), paymentId: z.string(), signature: z.string() })),
   async (req, res) => {
-    try { res.json(await PaymentService.verifyIap(req.body.orderId, req.body.paymentId, req.body.signature)); }
-    catch { res.status(400).json({ error: 'Verification failed' }); }
+    try { res.json(await PaymentService.verifyIap(req.user!.userId, req.body.orderId, req.body.paymentId, req.body.signature)); }
+    catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Verification failed';
+      res.status(msg === 'PURCHASE_NOT_FOUND' ? 404 : 400).json({ error: msg });
+    }
   }
 );
 
