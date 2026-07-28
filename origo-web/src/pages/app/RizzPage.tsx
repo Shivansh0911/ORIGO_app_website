@@ -12,7 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   ACTIVE:   { label: 'Active', color: 'text-green-400 bg-green-500/10 border-green-500/20' },
   WAITING:  { label: 'Waiting', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-  UNLOCKED: { label: 'Unlocked 🎉', color: 'text-primary bg-primary/10 border-primary/20' },
+  ACCEPTED: { label: 'Unlocked 🎉', color: 'text-primary bg-primary/10 border-primary/20' },
   DECLINED: { label: 'Declined', color: 'text-text-muted bg-muted border-border' },
   EXPIRED:  { label: 'Expired', color: 'text-text-muted bg-muted border-border' },
 };
@@ -35,7 +35,7 @@ function RizzProgressBar({ count }: { count: number }) {
 }
 
 function SessionRow({ session, myId }: { session: RizzSession; myId: string }) {
-  const other = session.initiatorId === myId ? session.receiver : session.initiator;
+  const other = session.initiatorId === myId ? session.target : session.initiator;
   const cfg = STATUS_CONFIG[session.status] ?? STATUS_CONFIG.ACTIVE;
 
   return (
@@ -49,7 +49,7 @@ function SessionRow({ session, myId }: { session: RizzSession; myId: string }) {
           <p className="font-medium text-text-primary truncate">{other.name}</p>
           <span className={`text-xs px-1.5 py-0.5 rounded-full border ${cfg.color}`}>{cfg.label}</span>
         </div>
-        <RizzProgressBar count={session.messageCount} />
+        <RizzProgressBar count={session.initiatorMsgCount} />
       </div>
       <div className="text-right shrink-0">
         <p className="text-xs text-text-muted">{formatDistanceToNow(new Date(session.createdAt), { addSuffix: true })}</p>

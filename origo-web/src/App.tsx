@@ -49,7 +49,6 @@ import PulsePage from './pages/app/PulsePage';
 import FreshersPage from './pages/app/FreshersPage';
 import IntroCardPage from './pages/app/IntroCardPage';
 import PromRadarPage from './pages/app/PromRadarPage';
-import BatchSpacePage from './pages/app/BatchSpacePage';
 import SeniorConnectPage from './pages/app/SeniorConnectPage';
 import WeMetPage from './pages/app/WeMetPage';
 
@@ -67,7 +66,6 @@ function AppRoutes() {
           <Route path="freshers" element={<FreshersPage />} />
           <Route path="intro-card" element={<IntroCardPage />} />
           <Route path="prom" element={<PromRadarPage />} />
-          <Route path="batch" element={<BatchSpacePage />} />
           <Route path="seniors" element={<SeniorConnectPage />} />
           <Route path="met" element={<WeMetPage />} />
           <Route path="discover" element={<DiscoverPage />} />

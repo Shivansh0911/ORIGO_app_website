@@ -45,11 +45,11 @@ export interface Interest {
 export interface RizzSession {
   id: string;
   initiatorId: string;
-  receiverId: string;
-  status: 'ACTIVE' | 'WAITING' | 'UNLOCKED' | 'DECLINED' | 'EXPIRED';
-  messageCount: number;
+  targetId: string;
+  status: 'ACTIVE' | 'WAITING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+  initiatorMsgCount: number;
   initiator: PublicUser;
-  receiver: PublicUser;
+  target: PublicUser;
   messages: RizzMessage[];
   createdAt: string;
   expiresAt: string | null;

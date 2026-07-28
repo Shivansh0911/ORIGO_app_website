@@ -77,8 +77,8 @@ export default function HeroSection() {
 
             {/* App Store Badges */}
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
-              <a
-                href="#"
+              <Link
+                to="/download"
                 className="flex items-center gap-3 bg-[#1A1A2E] border border-[#2A2A45] rounded-xl px-5 py-3 hover:border-primary transition-colors group"
               >
                 <div className="w-8 h-8 flex items-center justify-center">
@@ -90,9 +90,9 @@ export default function HeroSection() {
                   <div className="text-text-muted text-xs">Get it on</div>
                   <div className="text-white text-sm font-semibold font-poppins">Google Play</div>
                 </div>
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link
+                to="/download"
                 className="flex items-center gap-3 bg-[#1A1A2E] border border-[#2A2A45] rounded-xl px-5 py-3 hover:border-primary transition-colors group"
               >
                 <div className="w-8 h-8 flex items-center justify-center">
@@ -104,7 +104,7 @@ export default function HeroSection() {
                   <div className="text-text-muted text-xs">Download on the</div>
                   <div className="text-white text-sm font-semibold font-poppins">App Store</div>
                 </div>
-              </a>
+              </Link>
             </div>
 
             {/* Social proof */}

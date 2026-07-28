@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 
 // PSEUDO: Replace with your Railway backend URL
-const SOCKET_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:4000';
+const SOCKET_URL = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
 
 interface SocketState {
   socket: Socket | null;

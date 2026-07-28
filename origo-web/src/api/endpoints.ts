@@ -93,10 +93,10 @@ export const rizzApi = {
     api.post<RizzMessage>(`/rizz/sessions/${sessionId}/messages`, { content }),
 
   getIcebreaker: (sessionId: string) =>
-    api.get<{ tip: string }>(`/rizz/sessions/${sessionId}/icebreaker`),
+    api.get<{ prompt: string }>(`/rizz/sessions/${sessionId}/icebreaker`),
 
   decline: (sessionId: string) =>
-    api.patch(`/rizz/sessions/${sessionId}/decline`),
+    api.post(`/rizz/sessions/${sessionId}/decline`),
 };
 
 // ── Conversations / Chat ──────────────────────────────────────────────────────

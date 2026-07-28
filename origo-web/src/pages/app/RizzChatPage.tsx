@@ -16,7 +16,7 @@ function RizzBar({ count, status }: { count: number; status: string }) {
   const labels: Record<string, string> = {
     ACTIVE: count >= 5 ? 'Waiting for reply…' : isFinalShot ? '🔥 Final shot!' : `${5 - count} messages left`,
     WAITING: 'Waiting for them to reply',
-    UNLOCKED: 'Chat unlocked! 🎉',
+    ACCEPTED: 'Chat unlocked! 🎉',
     DECLINED: 'Session declined',
     EXPIRED: 'Session expired',
   };
@@ -93,7 +93,7 @@ export default function RizzChatPage() {
   const loadIcebreaker = async () => {
     try {
       const { data } = await rizzApi.getIcebreaker(sessionId!);
-      setIcebreaker(data.tip);
+      setIcebreaker(data.prompt);
     } catch { toast.error('No icebreaker available'); }
   };
 
@@ -107,11 +107,11 @@ export default function RizzChatPage() {
     <div className="flex items-center justify-center h-full"><Spinner size="lg" /></div>
   );
 
-  const other = session.initiatorId === user?.id ? session.receiver : session.initiator;
+  const other = session.initiatorId === user?.id ? session.target : session.initiator;
   const isInitiator = session.initiatorId === user?.id;
-  const canSend = session.status === 'ACTIVE' && isInitiator && session.messageCount < 5;
+  const canSend = session.status === 'ACTIVE' && isInitiator && session.initiatorMsgCount < 5;
   const canReply = session.status === 'WAITING' && !isInitiator;
-  const inputEnabled = canSend || canReply || session.status === 'UNLOCKED';
+  const inputEnabled = canSend || canReply || session.status === 'ACCEPTED';
 
   return (
     <div className="flex flex-col h-full">
@@ -161,7 +161,7 @@ export default function RizzChatPage() {
             </div>
           );
         })}
-        {session.status === 'UNLOCKED' && (
+        {session.status === 'ACCEPTED' && (
           <div className="text-center py-3">
             <span className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full border border-primary/20">
               🎉 Chat unlocked — head to Messages!

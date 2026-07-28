@@ -66,9 +66,8 @@ export default function CommunityDetailPage() {
   });
 
   const rsvpEvent = useMutation({
-    mutationFn: (e: CommunityEvent) =>
-      e.isRsvped ? communitiesApi.unrsvpEvent(e.id) : communitiesApi.rsvpEvent(e.id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['community-events', id] }),
+    mutationFn: (_e: CommunityEvent) => Promise.resolve(),
+    onSuccess: () => toast('RSVP coming soon!', { icon: '🗓️' }),
   });
 
   if (loadingCom) return <div className="flex items-center justify-center h-full"><Spinner size="lg" /></div>;
