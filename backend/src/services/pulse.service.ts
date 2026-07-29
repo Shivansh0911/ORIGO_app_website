@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { PulseCategory } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { moderateText } from '../utils/moderateText';
+import { MATCHING } from '../config/matching';
 
 const PULSE_TTL_HOURS = 3;
 
@@ -10,6 +11,7 @@ export const PulseService = {
     category: PulseCategory;
     text: string;
     vibe?: string;
+    maxResponses?: number;
   }) {
     // PULSE-02: one active Pulse per user at a time
     const activePulse = await prisma.pulse.findFirst({
@@ -17,6 +19,15 @@ export const PulseService = {
     });
     if (activePulse) throw new Error('ACTIVE_PULSE_EXISTS');
     moderateText(data.text, data.vibe);
+
+    // The author decides how many people they want. This is consent by their
+    // own choice rather than a limit we impose — and it closes the flooding
+    // hole, since every response opens a Rizz session with them. Clamped so a
+    // careless (or deliberate) large number can't reopen it.
+    const maxResponses = Math.min(
+      Math.max(data.maxResponses ?? MATCHING.pulseDefaultResponses, 1),
+      MATCHING.pulseMaxResponses,
+    );
 
     const author = await prisma.user.findUnique({
       where: { id: authorId },
@@ -32,6 +43,7 @@ export const PulseService = {
         category: data.category,
         text: data.text,
         vibe: data.vibe,
+        maxResponses,
         collegeName: author?.collegeName ?? null,
         expiresAt,
       },
@@ -84,6 +96,11 @@ export const PulseService = {
     });
     if (existing) throw new Error('ALREADY_RESPONDED');
 
+    // Enforce the author's chosen cap. Every response spawns a Rizz session
+    // with them, so an uncapped popular Pulse is an inbound flood.
+    const responseCount = await prisma.pulseResponse.count({ where: { pulseId } });
+    if (responseCount >= pulse.maxResponses) throw new Error('PULSE_FULL');
+
     // PULSE-01: spawn a Rizz session so responder and author can actually talk
     let rizzSessionId: string | null = null;
     try {
@@ -111,6 +128,14 @@ export const PulseService = {
     const response = await prisma.pulseResponse.create({
       data: { id: crypto.randomUUID(), pulseId, responderId, rizzSessionId },
     });
+
+    // Close the Pulse once the author has the number of people they asked for.
+    if (responseCount + 1 >= pulse.maxResponses) {
+      await prisma.pulse.update({
+        where: { id: pulseId },
+        data: { status: 'FULFILLED' },
+      }).catch(() => { /* non-fatal: the count check above is the real guard */ });
+    }
 
     const responder = await prisma.user.findUnique({ where: { id: responderId }, select: { name: true } });
     await prisma.notification.create({
