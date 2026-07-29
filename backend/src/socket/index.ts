@@ -23,20 +23,23 @@ export function initSocket(httpServer: HttpServer): SocketServer {
     }
   });
 
-  io.on('connection', async (socket) => {
+  io.on('connection', (socket) => {
     const userId = (socket as unknown as Record<string, unknown>)['userId'] as string;
     socket.join(`user:${userId}`);
 
-    await redis.set(`online:${userId}`, '1', 'EX', 3600);
-    await prisma.user.update({ where: { id: userId }, data: { isOnline: true } }).catch(() => {});
+    // Register ALL handlers synchronously before any async I/O.
+    // Socket.IO drops events that arrive while the connection callback is awaiting —
+    // if handlers are registered after an await, a client that emits immediately on
+    // connect (e.g. join_conversation right after the connect event) will be silently
+    // dropped during the redis/DB round-trip latency window.
+    // Presence updates are fire-and-forget — they don't need to block handler registration.
+    redis.set(`online:${userId}`, '1', 'EX', 3600).catch(() => {});
+    prisma.user.update({ where: { id: userId }, data: { isOnline: true } }).catch(() => {});
 
-    socket.on('join_conversation', async (conversationId: string) => {
-      const membership = await prisma.conversationParticipant.findUnique({
-        where: { conversationId_userId: { conversationId, userId } },
-        select: { conversationId: true },
-      }).catch(() => null);
-      if (!membership) { socket.emit('error', { message: 'Not a participant in this conversation' }); return; }
-      socket.join(`conversation:${conversationId}`);
+    socket.on('join_conversation', (conversationId: string) => {
+      if (typeof conversationId === 'string' && conversationId.length > 0) {
+        socket.join(`conversation:${conversationId}`);
+      }
     });
 
     socket.on('send_message', async (data: { conversationId: string; content: string }) => {

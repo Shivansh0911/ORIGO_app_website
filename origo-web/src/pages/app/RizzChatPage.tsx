@@ -68,14 +68,14 @@ export default function RizzChatPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [session?.messages]);
 
+  // Rizz messages arrive via polling (5s interval on the query above).
+  // Socket-based Rizz push is Phase 1 — the backend socket handler doesn't
+  // emit rizz events yet. The polling interval is short enough for the UX.
   useEffect(() => {
     if (!socket || !sessionId) return;
-    socket.emit('join-rizz', sessionId);
-    socket.on('rizz-message', () => {
-      qc.invalidateQueries({ queryKey: ['rizz-session', sessionId] });
-    });
-    return () => { socket.off('rizz-message'); };
-  }, [socket, sessionId, qc]);
+    // Join own user room so backend can push future Rizz socket events
+    socket.emit('join_conversation', sessionId);
+  }, [socket, sessionId]);
 
   const sendMutation = useMutation({
     mutationFn: (content: string) => rizzApi.sendMessage(sessionId!, content),

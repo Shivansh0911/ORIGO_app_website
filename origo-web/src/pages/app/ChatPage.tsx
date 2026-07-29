@@ -50,20 +50,20 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!socket || !conversationId) return;
-    socket.emit('join-conversation', conversationId);
-    socket.on('new-message', () => {
+    socket.emit('join_conversation', conversationId);
+    socket.on('new_message', () => {
       qc.invalidateQueries({ queryKey: ['messages', conversationId] });
       qc.invalidateQueries({ queryKey: ['conversations'] });
     });
-    socket.on('typing', (data: { userId: string }) => {
+    socket.on('user_typing', (data: { userId: string }) => {
       if (data.userId !== user?.id) { setTyping(true); setTimeout(() => setTyping(false), 2000); }
     });
-    return () => { socket.off('new-message'); socket.off('typing'); };
+    return () => { socket.off('new_message'); socket.off('user_typing'); };
   }, [socket, conversationId, user?.id, qc]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
-    socket?.emit('typing', { conversationId });
+    socket?.emit('typing_start', conversationId);
   };
 
   const sendMutation = useMutation({

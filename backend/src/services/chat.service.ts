@@ -10,7 +10,16 @@ export const ChatService = {
         conversation: {
           include: {
             participants: {
-              include: { user: { select: { id: true, name: true, avatarUrl: true, isOnline: true, lastSeen: true } } },
+              include: {
+                user: {
+                  select: {
+                    id: true, name: true, username: true, avatarUrl: true,
+                    bio: true, collegeName: true, gender: true, lookingFor: true,
+                    isVerified: true, isPremium: true, lastSeen: true,
+                    interests: { include: { interest: true } },
+                  },
+                },
+              },
             },
             messages: { orderBy: { createdAt: 'desc' }, take: 1 },
           },
@@ -20,15 +29,25 @@ export const ChatService = {
     });
 
     return participants.map((p) => {
-      const other = p.conversation.participants.find((cp) => cp.userId !== userId);
-      const lastMessage = p.conversation.messages[0];
+      const lastMessage = p.conversation.messages[0] ?? null;
+      const isUnread = !!(lastMessage && lastMessage.senderId !== userId &&
+        (!p.lastReadAt || lastMessage.createdAt > p.lastReadAt));
       return {
         id: p.conversation.id,
-        otherUser: other?.user,
-        lastMessage: lastMessage ? { content: lastMessage.content, type: lastMessage.messageType, createdAt: lastMessage.createdAt } : null,
-        lastReadAt: p.lastReadAt,
-        updatedAt: p.conversation.updatedAt,
-        unread: lastMessage && p.lastReadAt ? lastMessage.createdAt > p.lastReadAt && lastMessage.senderId !== userId : false,
+        participants: p.conversation.participants.map((cp) => cp.user),
+        lastMessage: lastMessage
+          ? {
+              id: lastMessage.id,
+              conversationId: p.conversation.id,
+              senderId: lastMessage.senderId,
+              content: lastMessage.content ?? '',
+              type: lastMessage.messageType as 'TEXT' | 'STICKER' | 'IMAGE',
+              readAt: null,
+              createdAt: lastMessage.createdAt.toISOString(),
+            }
+          : null,
+        unreadCount: isUnread ? 1 : 0,
+        updatedAt: p.conversation.updatedAt.toISOString(),
       };
     });
   },
@@ -48,16 +67,20 @@ export const ChatService = {
       include: {
         sender: { select: { id: true, name: true, avatarUrl: true } },
       },
-      orderBy: { createdAt: 'desc' },
-      take: 21,
+      orderBy: { createdAt: 'asc' },
+      take: 50,
     });
 
-    const hasMore = messages.length > 20;
-    const result = messages.slice(0, 20);
-    return {
-      messages: result.reverse(),
-      nextCursor: hasMore ? result[0]?.id : null,
-    };
+    return messages.map((m) => ({
+      id: m.id,
+      conversationId: m.conversationId,
+      senderId: m.senderId,
+      content: m.content ?? '',
+      type: m.messageType as 'TEXT' | 'STICKER' | 'IMAGE',
+      readAt: null,
+      createdAt: m.createdAt.toISOString(),
+      sender: m.sender,
+    }));
   },
 
   async sendMessage(conversationId: string, senderId: string, content: string, mediaUrl?: string, messageType: 'TEXT' | 'IMAGE' | 'STICKER' = 'TEXT') {
