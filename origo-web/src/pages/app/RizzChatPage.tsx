@@ -131,7 +131,7 @@ export default function RizzChatPage() {
       </div>
 
       {/* Progress bar */}
-      <RizzBar count={session.messageCount} status={session.status} />
+      <RizzBar count={session.initiatorMsgCount} status={session.status} />
 
       {/* Icebreaker tip */}
       {icebreaker && (

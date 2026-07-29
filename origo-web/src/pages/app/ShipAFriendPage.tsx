@@ -103,11 +103,11 @@ export default function ShipAFriendPage() {
 
         {/* Friend grid */}
         <div>
-          <p className="text-xs text-text-muted uppercase tracking-wider mb-2">Pick 2 from your matches</p>
+          <p className="text-xs text-text-muted uppercase tracking-wider mb-2">Pick 2 people from your campus</p>
           {isLoading ? (
             <div className="flex justify-center py-6"><Spinner /></div>
           ) : targets.length === 0 ? (
-            <p className="text-text-muted text-sm text-center py-4">You need at least 2 matches to ship people</p>
+            <p className="text-text-muted text-sm text-center py-4">No one to ship yet — check back once more of your campus has joined</p>
           ) : (
             <div className="grid grid-cols-2 gap-2">
               {targets.map((u: PublicUser) => (
