@@ -2,14 +2,22 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import type { PulseCategory } from '../../types';
 
-const CATEGORIES: { value: PulseCategory; label: string; desc: string }[] = [
-  { value: 'CHILL',         label: 'Chill',         desc: 'Hang out, do nothing, vibe' },
-  { value: 'MOVE',          label: 'Move',           desc: 'Walk, gym, sport, outdoor' },
-  { value: 'PLAY',          label: 'Play',           desc: 'Games, movie, fun activity' },
-  { value: 'TALK',          label: 'Talk',           desc: 'Vent, study, deep chat' },
-  { value: 'GROW',          label: 'Grow',           desc: 'Study group, skill swap' },
-  { value: 'DATE_PRACTICE', label: 'Date Practice',  desc: 'Low-stakes coffee / walk' },
+// Order is deliberate. CHILL / MOVE / PLAY / GROW are the everyday social
+// cases and take centre stage. TALK and DATE_PRACTICE come last: TALK
+// ("need someone to vent to") is a vulnerability broadcast that attracts the
+// wrong responders, and DATE_PRACTICE is romantic framing on what is meant to
+// be the default, non-dating surface. Neither should be the first thing a new
+// user sees.
+const CATEGORIES: { value: PulseCategory; label: string; desc: string; defaultCap: number }[] = [
+  { value: 'CHILL',         label: 'Chill',         desc: 'Hang out, do nothing, vibe',   defaultCap: 3 },
+  { value: 'MOVE',          label: 'Move',          desc: 'Walk, gym, sport, outdoor',    defaultCap: 3 },
+  { value: 'PLAY',          label: 'Play',          desc: 'Games, movie, fun activity',   defaultCap: 4 },
+  { value: 'GROW',          label: 'Grow',          desc: 'Study group, skill swap',      defaultCap: 4 },
+  { value: 'TALK',          label: 'Talk',          desc: 'Vent, study, deep chat',       defaultCap: 1 },
+  { value: 'DATE_PRACTICE', label: 'Date Practice', desc: 'Low-stakes coffee / walk',     defaultCap: 1 },
 ];
+
+const MAX_CAP = 10; // mirrors PULSE_MAX_RESPONSES; server clamps regardless
 
 const PLACEHOLDERS: Record<PulseCategory, string[]> = {
   CHILL:         ['Anyone free to just sit at the canteen?', "Hostel lobby, who's around?"],
@@ -22,7 +30,7 @@ const PLACEHOLDERS: Record<PulseCategory, string[]> = {
 
 interface Props {
   onClose: () => void;
-  onSubmit: (data: { category: PulseCategory; text: string; vibe?: string }) => void;
+  onSubmit: (data: { category: PulseCategory; text: string; vibe?: string; maxResponses: number }) => void;
   loading: boolean;
 }
 
@@ -30,14 +38,22 @@ export default function CreatePulseSheet({ onClose, onSubmit, loading }: Props) 
   const [category, setCategory] = useState<PulseCategory | null>(null);
   const [text, setText] = useState('');
   const [vibe, setVibe] = useState('');
+  const [maxResponses, setMaxResponses] = useState(3);
 
   const placeholders = category ? PLACEHOLDERS[category] : [];
   const placeholder = placeholders[Math.floor(Date.now() / 10000) % placeholders.length] ?? 'What do you want to do right now?';
 
+  // Picking a category suggests a sensible group size — a badminton game wants
+  // 3, venting wants 1 — while leaving the author free to change it.
+  const pickCategory = (value: PulseCategory) => {
+    setCategory(value);
+    setMaxResponses(CATEGORIES.find((c) => c.value === value)?.defaultCap ?? 3);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!category || !text.trim()) return;
-    onSubmit({ category, text: text.trim(), vibe: vibe.trim() || undefined });
+    onSubmit({ category, text: text.trim(), vibe: vibe.trim() || undefined, maxResponses });
   };
 
   return (
@@ -59,7 +75,7 @@ export default function CreatePulseSheet({ onClose, onSubmit, loading }: Props) 
                 <button
                   key={c.value}
                   type="button"
-                  onClick={() => setCategory(c.value)}
+                  onClick={() => pickCategory(c.value)}
                   className={`py-2 px-3 rounded-xl text-xs font-semibold text-left transition-all border
                     ${category === c.value
                       ? 'bg-primary text-white border-primary'
@@ -95,6 +111,35 @@ export default function CreatePulseSheet({ onClose, onSubmit, loading }: Props) 
               placeholder="e.g. low energy, night owl, introverts welcome"
               className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors"
             />
+          </div>
+
+          {/* How many people — the author's own cap on how many can join */}
+          <div>
+            <p className="text-xs text-text-muted mb-1.5 font-medium uppercase tracking-wide">How many people?</p>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setMaxResponses((n) => Math.max(1, n - 1))}
+                disabled={maxResponses <= 1}
+                aria-label="Fewer people"
+                className="w-10 h-10 rounded-xl bg-muted border border-border text-text-secondary text-lg font-semibold hover:border-primary/50 disabled:opacity-40 transition-colors"
+              >
+                −
+              </button>
+              <span className="text-lg font-bold text-text-primary tabular-nums w-8 text-center">{maxResponses}</span>
+              <button
+                type="button"
+                onClick={() => setMaxResponses((n) => Math.min(MAX_CAP, n + 1))}
+                disabled={maxResponses >= MAX_CAP}
+                aria-label="More people"
+                className="w-10 h-10 rounded-xl bg-muted border border-border text-text-secondary text-lg font-semibold hover:border-primary/50 disabled:opacity-40 transition-colors"
+              >
+                +
+              </button>
+              <p className="text-xs text-text-muted flex-1">
+                Your Pulse closes once {maxResponses === 1 ? 'someone joins' : `${maxResponses} people join`}.
+              </p>
+            </div>
           </div>
 
           <button

@@ -186,7 +186,7 @@ export const pulseApi = {
 
   getMine: () => api.get<Pulse | null>('/pulse/mine'),
 
-  create: (body: { category: PulseCategory; text: string; vibe?: string }) =>
+  create: (body: { category: PulseCategory; text: string; vibe?: string; maxResponses?: number }) =>
     api.post<Pulse>('/pulse', body),
 
   respond: (pulseId: string) =>

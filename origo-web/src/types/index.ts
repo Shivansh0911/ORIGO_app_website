@@ -176,6 +176,8 @@ export interface Pulse {
   text: string;
   vibe: string | null;
   status: PulseStatus;
+  /** How many responders the author is willing to take. */
+  maxResponses: number;
   collegeName: string | null;
   expiresAt: string;
   createdAt: string;
