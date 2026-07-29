@@ -2,6 +2,7 @@ import { RizzStatus } from '@prisma/client';
 import { prisma } from '../utils/prisma';
 import { redis } from '../utils/redis';
 import { moderateText } from '../utils/moderateText';
+import { MATCHING } from '../config/matching';
 
 export const RizzService = {
   async startSession(initiatorId: string, targetId: string) {
@@ -17,19 +18,40 @@ export const RizzService = {
     });
     if (existing && ['ACTIVE', 'WAITING', 'ACCEPTED'].includes(existing.status)) throw new Error('SESSION_ALREADY_EXISTS');
 
+    // A decline is final. Previously a DECLINED session fell through to the
+    // upsert below, which reset the counters and reactivated it — so someone
+    // you turned down could re-approach immediately, forever. On a campus
+    // where you will physically see this person tomorrow, that is the single
+    // most corrosive thing the product could do.
+    if (MATCHING.declineIsPermanent && existing?.status === 'DECLINED') {
+      throw new Error('DECLINE_IS_FINAL');
+    }
+
     const match = await prisma.match.findFirst({
       where: { OR: [{ senderId: initiatorId, receiverId: targetId }, { senderId: targetId, receiverId: initiatorId }], status: 'ACCEPTED' },
     });
     if (match) throw new Error('ALREADY_MATCHED');
 
+    // Inbound capacity: the target may only hold so many pending unanswered
+    // approaches at once. Replying, declining or expiry frees a slot, so this
+    // self-regulates by engagement rather than by fiat — and it is what stops
+    // the top few profiles absorbing every approach on a skewed campus.
+    const pendingInbound = await prisma.rizzSession.count({
+      where: { targetId, status: { in: ['ACTIVE', 'WAITING'] } },
+    });
+    if (pendingInbound >= MATCHING.inboundPendingCap) throw new Error('TARGET_AT_CAPACITY');
+
+    // Outbound budget applies to everyone. Premium gets a finite uplift, never
+    // an exemption — uncapped cold contact is not a feature we can sell here.
     const initiator = await prisma.user.findUnique({ where: { id: initiatorId } });
-    if (!initiator?.isPremium) {
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const count = await prisma.rizzSession.count({
-        where: { initiatorId, createdAt: { gte: today } },
-      });
-      if (count >= 5) throw new Error('DAILY_LIMIT_REACHED');
-    }
+    const dailyLimit = initiator?.isPremium
+      ? MATCHING.outboundDailyPremium
+      : MATCHING.outboundDaily;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const sentToday = await prisma.rizzSession.count({
+      where: { initiatorId, createdAt: { gte: today } },
+    });
+    if (sentToday >= dailyLimit) throw new Error('DAILY_LIMIT_REACHED');
 
     const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
     const session = await prisma.rizzSession.upsert({
@@ -68,9 +90,18 @@ export const RizzService = {
     if (isInitiator) {
       if (session.status === 'WAITING') throw new Error('WAITING_FOR_REPLY');
       if (session.status !== 'ACTIVE') throw new Error('SESSION_NOT_ACTIVE');
-      if (session.initiatorMsgCount >= 5) throw new Error('MESSAGE_LIMIT_REACHED');
+      if (session.initiatorMsgCount >= MATCHING.rizzMessageBudget) throw new Error('MESSAGE_LIMIT_REACHED');
       const newCount = session.initiatorMsgCount + 1;
-      const isLast = newCount >= 5;
+
+      // Pacing rule: you get a bounded number of messages before the other
+      // person has said anything, then you wait. The budget alone permitted
+      // bursting every message into silence — which, read from the receiving
+      // side, is a wall of text from a stranger, delivered repeatedly to the
+      // minority side of a skewed campus. "Make them count" only means
+      // something if you can't just send them all at once.
+      const isLast =
+        newCount >= MATCHING.maxConsecutiveMessages ||
+        newCount >= MATCHING.rizzMessageBudget;
       await prisma.$transaction([
         prisma.rizzMessage.create({
           data: { sessionId, senderId, content, initiatorMsgNumber: newCount },
@@ -87,8 +118,10 @@ export const RizzService = {
         data: {
           userId: session.targetId,
           type: 'RIZZ_MESSAGE',
-          title: isLast ? '⚡ Last Rizz message!' : '💬 New Rizz message',
-          body: isLast ? `${session.initiator.name} sent their final message!` : `${session.initiator.name} sent you a Rizz message`,
+          title: '💬 New Rizz message',
+          body: isLast
+            ? `${session.initiator.name} is waiting to hear back from you`
+            : `${session.initiator.name} sent you a Rizz message`,
           data: { sessionId },
         },
       });
@@ -170,7 +203,7 @@ export const RizzService = {
 
   async getSessions(userId: string, type: 'incoming' | 'outgoing') {
     const where = type === 'incoming' ? { targetId: userId } : { initiatorId: userId };
-    return prisma.rizzSession.findMany({
+    const sessions = await prisma.rizzSession.findMany({
       where,
       include: {
         initiator: { select: { id: true, name: true, avatarUrl: true, collegeName: true, isOnline: true } },
@@ -179,6 +212,7 @@ export const RizzService = {
       },
       orderBy: { updatedAt: 'desc' },
     });
+    return sessions.map((s) => maskDeclineForInitiator(s, userId));
   },
 
   async getSession(sessionId: string, userId: string) {
@@ -192,6 +226,27 @@ export const RizzService = {
     });
     if (!session) throw new Error('NOT_FOUND');
     if (session.initiatorId !== userId && session.targetId !== userId) throw new Error('FORBIDDEN');
-    return session;
+    return maskDeclineForInitiator(session, userId);
   },
 };
+
+/**
+ * An initiator is never told they were declined — they see the session as
+ * expired instead.
+ *
+ * On a campus you will sit next to this person in a lab tomorrow. An explicit
+ * "they turned you down" is a rejection with a face and a timetable attached,
+ * and it invites exactly the confrontation we don't want. The decline still
+ * does its real work internally: it is permanent, and it blocks any
+ * re-approach (see startSession). The target still sees their own declines
+ * accurately — this masks the initiator's view only.
+ */
+function maskDeclineForInitiator<T extends { status: RizzStatus; initiatorId: string }>(
+  session: T,
+  viewerId: string,
+): T {
+  if (session.status === 'DECLINED' && session.initiatorId === viewerId) {
+    return { ...session, status: 'EXPIRED' as RizzStatus };
+  }
+  return session;
+}

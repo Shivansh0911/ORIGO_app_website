@@ -7,12 +7,33 @@ import { RizzService } from '../services/rizz.service';
 
 const router = Router();
 
+// User-facing copy for the allocation limits. These must never shame either
+// party or leak a count: "they already have 3 pending" tells the sender
+// something about the recipient that is none of their business, and invites
+// them to keep retrying.
+const RIZZ_START_MESSAGES: Record<string, string> = {
+  TARGET_AT_CAPACITY: "They've got a few conversations going right now. Try again in a bit.",
+  DECLINE_IS_FINAL: "You can't start a new Rizz with this person.",
+  DAILY_LIMIT_REACHED: "You're out of Rizz for today. Fresh ones tomorrow.",
+  SESSION_ALREADY_EXISTS: 'You already have a Rizz going with them.',
+  ALREADY_MATCHED: "You're already connected with them.",
+  BLOCKED: "You can't start a Rizz with this person.",
+};
+
 router.post('/sessions', authMiddleware, validate(z.object({ targetId: z.string().cuid() })), async (req, res) => {
   try { res.status(201).json(await RizzService.startSession(req.user!.userId, req.body.targetId)); }
   catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Failed';
-    const map: Record<string, number> = { CANNOT_RIZZ_SELF: 400, BLOCKED: 403, SESSION_ALREADY_EXISTS: 409, ALREADY_MATCHED: 409, DAILY_LIMIT_REACHED: 429 };
-    res.status(map[msg] ?? 400).json({ error: msg });
+    const map: Record<string, number> = {
+      CANNOT_RIZZ_SELF: 400,
+      BLOCKED: 403,
+      DECLINE_IS_FINAL: 403,
+      SESSION_ALREADY_EXISTS: 409,
+      ALREADY_MATCHED: 409,
+      TARGET_AT_CAPACITY: 429,
+      DAILY_LIMIT_REACHED: 429,
+    };
+    res.status(map[msg] ?? 400).json({ error: msg, message: RIZZ_START_MESSAGES[msg] });
   }
 });
 
