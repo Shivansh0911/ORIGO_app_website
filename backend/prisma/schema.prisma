@@ -539,6 +539,12 @@ model Pulse {
   text        String        @db.VarChar(140)
   vibe        String?       @db.VarChar(60)
   status      PulseStatus   @default(ACTIVE)
+  /// How many responders the author is willing to take. Chosen by the author at
+  /// creation, bounded by PULSE_MAX_RESPONSES. Each response opens a Rizz
+  /// session with the author, so without a ceiling a popular Pulse becomes an
+  /// unbounded inbound flood — the same concentration problem the Rizz inbound
+  /// cap solves, arriving through a different door.
+  maxResponses Int          @default(3)
   collegeName String?
   expiresAt   DateTime
   createdAt   DateTime      @default(now())

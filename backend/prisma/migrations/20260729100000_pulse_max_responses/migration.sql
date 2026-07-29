@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Pulse" ADD COLUMN IF NOT EXISTS "maxResponses" INTEGER NOT NULL DEFAULT 3;
