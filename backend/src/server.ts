@@ -39,6 +39,7 @@ import notificationsRoutes from './routes/notifications.routes';
 import paymentsRoutes from './routes/payments.routes';
 import shipsRoutes from './routes/ships.routes';
 import pulseRoutes from './routes/pulse.routes';
+import eventsRoutes from './routes/events.routes';
 
 const app = express();
 const httpServer = createServer(app);
@@ -79,6 +80,10 @@ app.use('/v1/notifications', notificationsRoutes);
 app.use('/v1/payments', paymentsRoutes);
 app.use('/v1/ships', shipsRoutes);
 app.use('/v1/pulse', authMiddleware, requireVerified, pulseRoutes);
+// No auth middleware: telemetry fires before sign-in too, and the pre-auth
+// signup funnel is the part we most need to measure. The route attributes a
+// user when a valid token happens to be present.
+app.use('/v1/events', eventsRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
 

@@ -500,6 +500,31 @@ model ConsentLog {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+/// Append-only product telemetry. The web client has always emitted these
+/// (see origo-web/src/lib/telemetry.ts) but there was no endpoint to receive
+/// them, so every event was buffered and silently dropped.
+///
+/// Deliberately loose: `name` is a string rather than an enum and `props` is
+/// Json, so the client can add events without a migration. This table is meant
+/// to be boring and never to reject a write — losing an event is acceptable,
+/// failing a user's request to record one is not.
+///
+/// `userId` is nullable and NOT a foreign key: events survive account deletion
+/// as anonymous rows, which keeps funnel history intact without retaining a
+/// link to the person.
+model AnalyticsEvent {
+  id         String   @id @default(cuid())
+  name       String
+  props      Json?
+  userId     String?
+  sessionId  String
+  ts         DateTime // client-side event time
+  receivedAt DateTime @default(now())
+
+  @@index([name, ts])
+  @@index([userId, ts])
+}
+
 model DeletionAuditLog {
   id        String   @id @default(cuid())
   userId    String
