@@ -40,7 +40,26 @@ Email OTP is the fallback path only.
 
 ## Phase 1 — Launch blockers · **Jul 30 → Aug 1**
 
-### 1.1 ⬜ Discover, grouped by context — **replaces Batch Space**
+### 1.0 ⬜ Onboarding + profile shape · **decided 2026-07-29**
+
+**Signup:** Google sign-in (auto-verifies) → DOB → interests. That's it — they're in.
+Intro Card is prompted **immediately after** signup, not inside it, so a user who
+bounces off card creation is still a signed-up user.
+
+**Drop the bio field from onboarding entirely.** Bio stays editable in profile
+settings for those who want it; it is never asked for up front. Replace it with
+**prompt answers** — "Hot take: ___" produces something specific, memorable and
+conversation-starting; a bio produces "chill guy, love music and travelling."
+
+**Profiles need 2–3 prompt answers**, not one — they're load-bearing for the
+Hinge-style profile view (1.1) and for Rizz openers (1.3a).
+
+> **Design context:** most users will sign up *from their room*, not at the
+> stall. The stall is a boost channel, not the design constraint. This means we
+> can ask for a richer profile than a queue would allow — a real photo, multiple
+> prompts, considered answers.
+
+### 1.1 ⬜ Discover — context-first browse, Hinge-style profile
 
 > **Batch Space is cut.** It was a threads/messaging surface competing directly
 > with the batch WhatsApp group every fresher is already in — an incumbent with
@@ -52,18 +71,63 @@ Email OTP is the fallback path only.
 > in a 200-person city group for a month and never learn who's in your branch.
 > That capability survives, folded into Discover rather than given its own tab.
 
-Replace the single ranked list with **context-grouped rows**:
+Two distinct layers. Hinge conflates them because dating only needs the second;
+Origo needs both kept separate.
 
-- "From Jaipur (12)" · "In CSE (34)" · "In Hostel D (18)" · "Also into F1 (7)"
-- Groups derive from `hometown` / `branch` / `batchYear` / interests (task 1.10).
-- Each row is horizontally scrollable; tapping a person opens their profile.
-- A person appears in multiple rows — that's a feature, it's how you notice
-  overlap ("she's from my city *and* in my branch").
-- **Senior badge** on profiles replaces the ask-a-senior thread entirely.
+**Browse layer — context chips as filters over a list.**
 
-**Why this works at cold start:** rows populate by derivation the moment someone
-verifies. Zero posts required, so there is no visible emptiness — the value is
-the people, not the content.
+- Chips with counts along the top: "Jaipur · 12" · "CSE · 34" · "Hostel D · 18"
+- A list of people below. Tapping a chip **filters** the list; it does not
+  navigate to a separate destination.
+- Derived from `hometown` / `branch` / `joiningYear` / interests (task 1.10).
+- **Senior badge** shown on profiles — replaces the ask-a-senior thread entirely.
+
+> **Why filters, not destinations:** making contexts their own screens forces a
+> choice before any content is visible, and dead-ends anyone who shares no
+> context with the pool. Chips-over-list has no dead end, no forced step, and is
+> less to build than either carousels or separate screens.
+
+**No intent selector on Discover.** The DATING / FRIENDS / NETWORKING /
+STUDY_BUDDY chips come off. Romantic discovery is opt-in via Radar ([0004](decisions/0004-dating-as-opt-in-episodic-surface.md)),
+so surfacing "Dating" as a chip on the main people surface both contradicts that
+and re-codes the app as a dating product. The engine still supports intents; the
+UI runs `FRIENDS` and stops asking.
+
+**Ranking within the list** uses the existing client engine (`matching.ts`) at
+launch — the server ranker is Phase 3. Be honest about the stakes: ordering 12
+people in a context is near-irrelevant, and that engine's value only arrives with
+scale. Do not over-invest here before density exists.
+
+**Profile layer — Hinge-style.** Photos interleaved with prompt answers, one
+person at a time, full detail. This is where considered engagement happens.
+
+**Reach out by reacting to a specific prompt** — that reaction becomes the Rizz
+opener (see 1.3a). This is Hinge's genuinely good idea: you engage with
+*content*, not a face, so the first message is specific by construction rather
+than "hey".
+
+> **Why not full Hinge-style browsing:** one-at-a-time is a bad way to answer
+> "who's from my city" (a directory question), it exhausts a small pool fast,
+> and it is unavoidably the dating-app interaction model — which cuts against
+> the positioning. Split across two layers, we get the good part without that.
+
+⚠️ Density tiers apply — see 1.1a.
+
+### 1.1a ⬜ Density tiers — never show an empty room
+
+Context clusters do **not** solve cold start; with 20 users there are no
+clusters, and "Jaipur · 1" advertises that the app is empty at the worst
+possible moment. Behaviour must change by population:
+
+| Users | Discover shows |
+|---|---|
+| **< 40** | One list of everyone. No context cards, no counts. |
+| **40–150** | Context cards appear **only at ≥5 members**; the rest fall into "Others on campus". |
+| **150+** | Full context-first experience. |
+
+- **Never render a count below 5.** Suppress the card instead.
+- **No zero-state reads as failure.** Not "No one from your city yet" but
+  "You're the first from Jaipur — your card will find them."
 
 **Delete:** `BatchSpacePage.tsx`, `BATCH_INFO` from `lib/freshers/content.ts`,
 `freshersStore.batchJoined`, and the `/app/batch` route.
@@ -93,6 +157,22 @@ Per [decisions/0003](decisions/0003-matching-strategy.md) Layer 0 + [matching-sp
 - Config in `backend/src/config/matching.ts`, all env-overridable — these need
   tuning *during* freshers week without a redeploy.
 
+### 1.3a ⬜ Rizz — consecutive-message cap + opaque declines
+Both change the signature mechanic; both decided 2026-07-29.
+
+- **Max 2 consecutive messages without a reply.** The remaining budget unlocks
+  once the target responds. Keeps the "Rizz In 5" brand while making the
+  incentives match the philosophy — today the design permits bursting all five
+  into silence, which from the receiving side is a wall of text from a stranger,
+  received repeatedly by the minority side on a 75:25 campus.
+- **Never surface `DECLINED` to the initiator** — show it as expired/no response.
+  Campus rejection has a face and a timetable; an explicit "they declined you"
+  about someone you'll see in the mess tomorrow is socially corrosive. The
+  decline still works exactly as designed internally (permanent — B1).
+- **Openers seeded from prompt reactions** (1.1): reaching out from a specific
+  prompt answer pre-fills the opener with that context, so the first message is
+  never a blank page.
+
 ### 1.4 ⬜ Ship a Friend — relax eligibility + enforce privacy
 - Eligibility: anyone in your batch/campus, **not** only accepted matches
   (currently requires 2 accepted matches — unusable on day 1).
@@ -116,10 +196,12 @@ doesn't read as a people-browsing product on open.
 We Met, Quests, Premium, Boost, Sticker/Rizz/ViewShips, Freshers HQ hub.
 Hide — do not delete. Empty surfaces are the main cause of "this app is dead."
 
-### 1.7 ⬜ Discover: change the action verbs
-`Like` / `Pass` → **`Say hi` / `Skip`**. Copy-only change. "Pass" is a judgment
-on a person you'll sit next to in lab tomorrow; different social weight than an
-anonymous city-wide app.
+### 1.7 ❄️ ~~Discover: change the action verbs~~ — **superseded by 1.1**
+This said change `Like`/`Pass` → `Say hi`/`Skip`. It was written when Discover
+was a swipe card stack. In the chips-over-list + profile model there **is no card
+stack and no Like/Pass at all** — the only action is "Say hi" from a profile,
+optionally seeded by a prompt reaction. Nothing to change; the swipe UI is
+deleted, not relabelled.
 
 ### 1.8 ⬜ Manual verification approval
 Fallback for the first week if a fresher's college email isn't issued yet.
@@ -134,6 +216,11 @@ choice rather than a rule we impose.
 - `Pulse.maxResponses Int` — author picks at creation. Default 3, hard max from
   config (`PULSE_MAX_RESPONSES`, start at 10) so a careless 100 can't reopen the
   flooding hole.
+- **`TALK` is demoted, not cut.** Order it last, keep it out of featured
+  placeholders and examples, and default it to a lower cap (1–2). "Need someone
+  to vent to" from an 18-year-old is a vulnerability broadcast and will attract
+  the wrong responders — it shouldn't be what a new user sees first. CHILL /
+  MOVE / PLAY take centre stage.
 - UI: a small stepper on the compose sheet — *"How many people?"* Shows
   remaining slots on the card ("2 spots left") which also creates urgency.
 - At cap → status `FULL`, hidden from feed, no further responses accepted.
@@ -145,10 +232,15 @@ deliberate and must not be "optimised away": without it, Pulse is a total bypass
 of the Rizz limits — respond to 40 pulses, get 40 conversations, never touch the
 cap. Make the UI honest about it ("Responding starts a Rizz session").
 
-### 1.9 ⬜ Happening — real content
+### 1.9 ⬜ Happening — real content · **owner: Shivansh**
 Cut sponsored cards. Add a way for the team to enter real orientation events
 (admin endpoint or direct DB seed is fine). During orientation this should
 simply be the best campus schedule that exists.
+
+**Owned by Shivansh with a weekly update commitment.** This is the only surface
+whose content we fully control, which makes it the day-one hero — the app is
+never empty regardless of user count if this has 15 real events in it. It also
+goes stale fastest, and a stale events list is visible evidence of abandonment.
 
 ### 1.10 ⬜ Persist `joiningYear`, `degreeType`, `branch`, `hometown` on `User`
 `IntroCardPage` collects branch/batch/hometown and throws them all away (local
@@ -261,6 +353,18 @@ caught by typecheck or tests.
 | Batch + degree type derived from the verified BITS email ID, never self-reported | 1.10 |
 | Cohorts named by **joining year** ("23 batch"), not passout — matches how students actually speak | 1.10 |
 | Pulse response cap is set by the author, bounded by config max | 1.9a |
+| Intro Card prompted **after** signup, not inside it | 1.0 |
+| Bio dropped from onboarding; replaced by 2–3 prompt answers | 1.0 |
+| Discover = context **filter chips over a list** + Hinge-style profile; reach out by reacting to a prompt | 1.1 |
+| No intent selector on Discover — "Dating" comes off the main people surface entirely | 1.1 |
+| Swipe card stack + Like/Pass deleted, not relabelled | 1.7 |
+| Density tiers — never show a cluster count below 5 | 1.1a |
+| Rizz: max 2 consecutive messages without a reply | 1.3a |
+| Declines never surfaced to the initiator (shown as expired) | 1.3a |
+| Pulse `TALK` demoted — kept, but never centre stage | 1.9a |
+| Happening owned by **Shivansh**, weekly updates | 1.9 |
+| **Intro Card requires a photo**; signup does not | 1.0 / 2.3 |
+| Most users sign up from their room — stall is a boost channel, not the design constraint | 1.0 |
 | Happening ships, manually curated, no sponsored cards | 1.9 |
 | Payments/Premium cut from launch | 1.6 |
 | Behavioural data collected under a specific notice + business-transfer clause | — |
@@ -272,6 +376,9 @@ caught by typecheck or tests.
    pool as first-degree students, or should `degreeType` filter the default view?
    Now that we can derive it reliably, it's a product call worth making
    deliberately rather than by default.
+3. Which prompts ship at launch? Needs ~8 written, each with 2–3 suggested
+   answers so the field is never blank. These carry the profile, the Intro Card,
+   and the Rizz opener — worth writing carefully rather than generating.
 
 ## Explicitly out of scope for launch
 
