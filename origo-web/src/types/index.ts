@@ -28,6 +28,10 @@ export interface PublicUser {
   interests: UserInterest[];
   lastSeen: string | null;
   compatibilityScore?: number;
+  /** Community memberships — present only on /discover candidates (BLOCK-3 fix). */
+  communities?: { id: string; memberCount: number; category: string }[];
+  /** Recency-based responsiveness proxy 0..1 — present only on /discover candidates. */
+  responsiveness?: number;
 }
 
 export interface UserInterest {

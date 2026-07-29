@@ -81,6 +81,9 @@ export const DiscoverService = {
       include: {
         interests: { include: { interest: true } },
         privacy: true,
+        communityMemberships: {
+          include: { community: { select: { id: true, memberCount: true, interest: { select: { category: true } } } } },
+        },
       },
       skip: 0,
       take: 100,
@@ -95,6 +98,9 @@ export const DiscoverService = {
         include: {
           interests: { include: { interest: true } },
           privacy: true,
+          communityMemberships: {
+            include: { community: { select: { id: true, memberCount: true, interest: { select: { category: true } } } } },
+          },
         },
         skip: 0,
         take: 100,
@@ -128,8 +134,20 @@ export const DiscoverService = {
       );
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { passwordHash, dateOfBirth, phone, collegeEmail, firebaseUid, pushToken, ...safe } = u;
-      return { ...safe, compatibilityScore };
+      const { passwordHash, dateOfBirth, phone, collegeEmail, firebaseUid, pushToken, communityMemberships, privacy, ...safe } = u;
+
+      const communities = communityMemberships.map((m) => ({
+        id: m.communityId,
+        memberCount: m.community.memberCount,
+        category: m.community.interest?.category ?? undefined,
+      }));
+
+      // Responsiveness proxy: approximated from lastSeen until per-user Rizz outcome
+      // history exists (Phase 1). Higher = more recently active = more likely to reply.
+      const hoursAgo = u.lastSeen ? (Date.now() - new Date(u.lastSeen).getTime()) / 3_600_000 : Infinity;
+      const responsiveness = hoursAgo < 1 ? 0.9 : hoursAgo < 24 ? 0.65 : hoursAgo < 72 ? 0.35 : 0.15;
+
+      return { ...safe, compatibilityScore, communities, responsiveness };
     });
 
     // Sort by score descending, then paginate the ranked list

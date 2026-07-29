@@ -1,15 +1,15 @@
-// SEC-10: basic text moderation applied to all user-generated free text.
-// Replace this list with a proper bad-words library (e.g. `bad-words` npm package) or
-// a Rekognition / OpenAI Moderation API call before launch.
-// Deliberately short — the point is the hook exists and every write path calls it.
+// SEC-10: text moderation applied to all user-generated free text.
+// Uses `bad-words` npm package for English slurs, augmented with Hindi/Hinglish
+// patterns that the library misses. Consider Rekognition / OpenAI Moderation for Phase 2.
 
-const BLOCKED_PATTERNS = [
-  /\bn[i1]g{1,2}[ae3]r/i,
-  /\bf[ua@]g{1,2}[o0]t/i,
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const Filter = require('bad-words');
+const _filter = new Filter();
+
+const EXTRA_PATTERNS = [
   /\bch[uo]tiy[ae]/i,
   /\bbh[oa]nc?ho?d/i,
   /\bm[ao]d[ae]rf[au]ck/i,
-  /\bc[uo]nt\b/i,
 ];
 
 export class ModerationError extends Error {
@@ -19,7 +19,8 @@ export class ModerationError extends Error {
 export function moderateText(...texts: (string | null | undefined)[]): void {
   for (const text of texts) {
     if (!text) continue;
-    for (const pat of BLOCKED_PATTERNS) {
+    if (_filter.isProfane(text)) throw new ModerationError();
+    for (const pat of EXTRA_PATTERNS) {
       if (pat.test(text)) throw new ModerationError();
     }
   }

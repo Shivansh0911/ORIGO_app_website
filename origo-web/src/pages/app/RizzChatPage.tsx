@@ -111,7 +111,7 @@ export default function RizzChatPage() {
   const isInitiator = session.initiatorId === user?.id;
   const canSend = session.status === 'ACTIVE' && isInitiator && session.initiatorMsgCount < 5;
   const canReply = session.status === 'WAITING' && !isInitiator;
-  const inputEnabled = canSend || canReply || session.status === 'ACCEPTED';
+  const inputEnabled = canSend || canReply;
 
   return (
     <div className="flex flex-col h-full">
@@ -162,10 +162,14 @@ export default function RizzChatPage() {
           );
         })}
         {session.status === 'ACCEPTED' && (
-          <div className="text-center py-3">
-            <span className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-full border border-primary/20">
-              🎉 Chat unlocked — head to Messages!
-            </span>
+          <div className="text-center py-4">
+            <p className="text-sm text-text-secondary mb-3">🎉 You're connected! Continue the conversation in Messages.</p>
+            <button
+              onClick={() => navigate('/app/messages')}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-light transition-colors"
+            >
+              Continue in Messages →
+            </button>
           </div>
         )}
         <div ref={bottomRef} />

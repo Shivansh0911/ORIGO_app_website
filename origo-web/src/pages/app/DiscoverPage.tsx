@@ -7,7 +7,7 @@ import { discoverApi, matchesApi, communitiesApi, rizzApi } from '../../api/endp
 import { useAuthStore } from '../../store/authStore';
 import {
   rankCandidates, primaryIntent, compatibilityBand,
-  type Intent, type ScoredUser, type Viewer, type CommunityRef,
+  type Intent, type ScoredUser, type Viewer, type CommunityRef, type MatchContext,
 } from '../../lib/matching';
 import { track } from '../../lib/telemetry';
 import { DiscoverSkeleton } from '../../components/ui/Skeleton';
@@ -212,7 +212,18 @@ export default function DiscoverPage() {
 
   const ranked = useMemo(() => {
     if (!viewer) return [];
-    return rankCandidates(viewer, people, { intent });
+    // Build per-candidate context from data returned by /discover (BLOCK-3 fix).
+    // Graph (Adamic-Adar) + responsiveness terms now fire when backend supplies them.
+    const contextById: Record<string, MatchContext> = {};
+    for (const p of people) {
+      if (p.communities || p.responsiveness !== undefined) {
+        contextById[p.id] = {
+          candidateCommunities: p.communities,
+          candidateResponsiveness: p.responsiveness,
+        };
+      }
+    }
+    return rankCandidates(viewer, people, { intent, contextById });
   }, [viewer, people, intent]);
 
   const unseen = ranked.filter((u) => !seen.has(u.id));
