@@ -54,4 +54,11 @@ export const MATCHING = {
   /** Default and hard-max responses an author may accept on a Pulse. */
   pulseDefaultResponses: int(process.env['PULSE_DEFAULT_RESPONSES'], 3),
   pulseMaxResponses: int(process.env['PULSE_MAX_RESPONSES'], 10),
+
+  /**
+   * Ships a user may send per day. Ship is deliberately cheap and playful, but
+   * uncapped third-party introductions are a spam vector — each one notifies
+   * two people who did not ask for it.
+   */
+  shipsPerDay: int(process.env['MATCH_SHIPS_PER_DAY'], 5),
 } as const;
