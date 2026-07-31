@@ -26,7 +26,7 @@ export default function IntroCardPage() {
   const [hometown, setHometown] = useState(() => user?.hometown ?? '');
   const branchYear = [branch, user?.joiningYear ? `Batch of ${user.joiningYear}` : null]
     .filter(Boolean).join(' · ');
-  const [promptLabel, setPromptLabel] = useState(ICEBREAKER_PROMPTS[0]);
+  const [promptLabel, setPromptLabel] = useState(ICEBREAKER_PROMPTS[0]!.label);
   const [promptAnswer, setPromptAnswer] = useState('');
   const [format, setFormat] = useState<CardFormat>('story');
   const [theme, setTheme] = useState<CardTheme>(CARD_THEMES[0]);
@@ -236,20 +236,37 @@ export default function IntroCardPage() {
             <div className="flex gap-2 flex-wrap mb-2">
               {ICEBREAKER_PROMPTS.map((p) => (
                 <button
-                  key={p}
-                  onClick={() => setPromptLabel(p)}
+                  key={p.label}
+                  type="button"
+                  onClick={() => { setPromptLabel(p.label); setPromptAnswer(''); }}
                   className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                    promptLabel === p ? 'bg-primary text-white border-primary' : 'border-border text-text-secondary hover:border-primary/50'
+                    promptLabel === p.label ? 'bg-primary text-white border-primary' : 'border-border text-text-secondary hover:border-primary/50'
                   }`}
                 >
-                  {p}
+                  {p.label}
                 </button>
               ))}
             </div>
+
+            {/* Tappable suggested answers — never a blank page. Still fully
+                editable after tapping; these are starting points, not a form. */}
+            <div className="flex flex-col gap-1.5 mb-2">
+              {(ICEBREAKER_PROMPTS.find((p) => p.label === promptLabel)?.suggestions ?? []).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setPromptAnswer(s)}
+                  className="text-left text-sm px-3 py-2 rounded-xl border border-border text-text-secondary hover:border-primary/50 hover:text-text-primary transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
             <textarea
               value={promptAnswer}
               onChange={(e) => setPromptAnswer(e.target.value.slice(0, 140))}
-              placeholder="Your answer — keep it short and real"
+              placeholder="Tap a suggestion above, or write your own"
               rows={3}
               className="w-full bg-card border border-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition-colors resize-none"
             />

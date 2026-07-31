@@ -1,3 +1,12 @@
+> ⚠️ **Superseded for the current launch.** This describes an earlier phasing
+> of the matching/ML roadmap. The active plan is
+> [docs/BUILD_PLAN.md](BUILD_PLAN.md) (sequencing) and
+> [docs/decisions/0003](decisions/0003-matching-strategy.md) (the reasoning —
+> matching is an allocation problem, not a prediction problem, and there is
+> deliberately no ML at launch). The feature set here also predates several
+> launch-scope cuts (Batch Space, Premium/payments, We Met, Quests). Historical
+> value only; don't build from this file.
+
 # Origo — Phased Roadmap (with milestone triggers)
 
 The core discipline: **match the sophistication of the system to the data and

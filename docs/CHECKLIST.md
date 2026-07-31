@@ -1,3 +1,8 @@
+> ⚠️ **Superseded for the current launch.** Last updated 2026-07-19, before the
+> launch-scope brainstorm and cuts. The active backlog is
+> [docs/BUILD_PLAN.md](BUILD_PLAN.md), which supersedes both the Dev TODO and
+> Founder TODO sections below. Historical value only.
+
 # Origo — Living Checklist
 
 > Keep this current. Tick items in the same PR that completes them. Three

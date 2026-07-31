@@ -1,3 +1,11 @@
+> ⚠️ **Superseded for the current launch.** Written before the launch-scope
+> brainstorm — describes features since cut (Batch Space, Prom Radar as
+> described here, We Met live scanning) and an ML-phased matching plan since
+> replaced. Active reference: [docs/BUILD_PLAN.md](../docs/BUILD_PLAN.md) and
+> [docs/decisions/0003](../docs/decisions/0003-matching-strategy.md). The
+> client-side matching engine (`src/lib/matching.ts`) described below is still
+> accurate and in active use — only the roadmap/feature framing is stale.
+
 # Origo Web — Matching & Freshers Implementation
 
 This documents what was built into `origo-web` in this pass, how it maps to the

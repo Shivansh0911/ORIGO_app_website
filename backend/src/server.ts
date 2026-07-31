@@ -10,6 +10,29 @@ function checkEnv(): void {
   if (!/^[0-9a-fA-F]{64}$/.test(process.env['BLIND_INDEX_KEY']!)) {
     throw new Error('[startup] BLIND_INDEX_KEY must be exactly 64 hex characters (32 bytes)');
   }
+
+  // B9: Razorpay pseudo-mode is the *intentional* launch state — payments are
+  // cut from launch scope (BUILD_PLAN.md), so we deliberately do NOT require
+  // real keys here; doing so would block Phase 0 deploy for a feature nobody
+  // is using yet. What genuinely indicates a mistake is exactly one of the two
+  // being set — that's a typo or a half-finished config, never a deliberate
+  // choice, and it would leave payment.service.ts's IS_PSEUDO check reading a
+  // key that doesn't match its counterpart.
+  const hasKeyId = !!process.env['RAZORPAY_KEY_ID'];
+  const hasKeySecret = !!process.env['RAZORPAY_KEY_SECRET'];
+  if (hasKeyId !== hasKeySecret) {
+    throw new Error(
+      '[startup] RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must both be set or both be absent — ' +
+      'found only one, which looks like a misconfiguration rather than a deliberate pseudo-mode choice.',
+    );
+  }
+  if (!hasKeyId && process.env['NODE_ENV'] === 'production') {
+    console.warn(
+      '[startup] Razorpay keys are not set — running in PSEUDO-MODE in production. ' +
+      'Payments will be mocked (mock_sig accepted). This is the intended launch state ' +
+      '(payments are out of scope for v1) — but if that ever changes, this is where it would bite silently.',
+    );
+  }
 }
 checkEnv();
 

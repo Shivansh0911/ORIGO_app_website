@@ -117,12 +117,66 @@ export const PROM_INFO = {
   optedInCount: 218,
 };
 
-/** Icebreaker prompts offered in the Intro Card composer. */
-export const ICEBREAKER_PROMPTS = [
-  'Hot take',
-  "You'll find me…",
-  'Two truths, one lie',
-  'My campus goal this year',
-  'Looking for someone to…',
-  'Ask me about',
+/**
+ * Icebreaker prompts offered in the Intro Card composer and profile.
+ *
+ * Each ships with 2-3 suggested answers so the field is never a blank page —
+ * "write something witty on demand while a queue waits behind you" is where
+ * most people freeze and type "hi". Suggestions are tappable starting points,
+ * always editable afterwards. See BUILD_PLAN.md open question 3.
+ */
+export interface IcebreakerPrompt {
+  label: string;
+  suggestions: string[];
+}
+
+export const ICEBREAKER_PROMPTS: IcebreakerPrompt[] = [
+  {
+    label: 'Hot take',
+    suggestions: [
+      'Pineapple absolutely belongs on pizza.',
+      'The mess food is actually underrated.',
+      'Morning classes should not exist.',
+    ],
+  },
+  {
+    label: "You'll find me…",
+    suggestions: [
+      'At the canteen, always',
+      'In the library at 2am before deadlines',
+      'Wherever there\'s free food',
+    ],
+  },
+  {
+    label: 'Two truths, one lie',
+    suggestions: [
+      "I've never left my home state before this.",
+      "I can't swim but I signed up for the swim club.",
+      "I once talked to a celebrity and didn't realise it.",
+    ],
+  },
+  {
+    label: 'My campus goal this year',
+    suggestions: [
+      'Join a club I know nothing about',
+      'Actually go to the gym I signed up for',
+      'Find my people before the semester ends',
+    ],
+  },
+  {
+    label: 'Looking for someone to…',
+    suggestions: [
+      'Explore the city with on weekends',
+      'Cram for exams with at 3am',
+      'Split a Swiggy order with',
+    ],
+  },
+  {
+    label: 'Ask me about',
+    suggestions: [
+      'My hometown — I will not shut up about it',
+      'The weirdest hobby I have',
+      'Why I chose this branch',
+    ],
+  },
 ];
