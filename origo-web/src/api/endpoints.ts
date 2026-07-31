@@ -196,6 +196,22 @@ export const pulseApi = {
     api.delete(`/pulse/${pulseId}`),
 };
 
+// ── Happening ─────────────────────────────────────────────────────────────────
+export interface HappeningEvent {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  emoji: string;
+  accent: string;
+  cta: string | null;
+  linkTo: string | null;
+  startAt: string;
+}
+
+export const happeningApi = {
+  getFeed: () => api.get<HappeningEvent[]>('/happening'),
+};
+
 // ── Ships ─────────────────────────────────────────────────────────────────────
 export const shipsApi = {
   create: (body: { targetOneId: string; targetTwoId: string; message?: string }) =>

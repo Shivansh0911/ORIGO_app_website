@@ -29,56 +29,11 @@ export const QUESTS: Quest[] = [
   { id: 'connect', title: 'Make your first connection', description: 'Start a Rizz In 5 or match with someone new.', emoji: '⚡', points: 15, to: '/app/discover' },
 ];
 
-export interface HappeningItem {
-  id: string;
-  kind: 'event' | 'sponsored' | 'milestone';
-  title: string;
-  subtitle: string;
-  emoji: string;
-  accent: string;      // hex, drives the card glow
-  cta?: string;
-  to?: string;
-  sponsorName?: string; // present when kind === 'sponsored'
-}
-
-/**
- * GET /v1/happening?campus=… — the "Happening Around You" carousel.
- * Sponsored cards are interleaved at ~1 per 5 items by `happeningFeed()` below,
- * per the ad-load discipline in The Freshers Playbook (§5).
- */
-export const HAPPENING_EVENTS: HappeningItem[] = [
-  { id: 'orientation', kind: 'event', title: 'Orientation Week kicks off', subtitle: 'Mon 9:00 AM · Main Auditorium', emoji: '🎉', accent: '#6C3DFF', cta: 'View schedule', to: '/app/happening' },
-  { id: 'club-fair', kind: 'event', title: 'Club & Society Fair', subtitle: 'Wed 4:00 PM · Central Lawn', emoji: '🎪', accent: '#FF6B9D', cta: 'Browse clubs', to: '/app/communities' },
-  { id: 'prom', kind: 'event', title: 'Freshers’ Night is coming', subtitle: '14 days away · find your crew', emoji: '💃', accent: '#F59E0B', cta: 'Open Prom Radar', to: '/app/prom' },
-  { id: 'milestone', kind: 'milestone', title: 'Batch of ’30 just crossed 500', subtitle: 'Your incoming batch is filling up', emoji: '🚀', accent: '#10B981', cta: 'Join the batch', to: '/app/batch' },
-  { id: 'hackathon', kind: 'event', title: 'HackNight registrations open', subtitle: 'Sat 6:00 PM · CS Block', emoji: '💻', accent: '#8B5CF6', cta: 'Count me in', to: '/app/communities' },
-];
-
-/** GET /v1/happening/sponsored?campus=… — local, flat-rate campus advertisers. */
-export const HAPPENING_SPONSORED: HappeningItem[] = [
-  { id: 'sp-chai', kind: 'sponsored', sponsorName: 'Campus Chai Co.', title: '20% off for freshers', subtitle: 'Show your Origo profile at the counter', emoji: '☕', accent: '#B4700A', cta: 'Get the deal' },
-  { id: 'sp-cycle', kind: 'sponsored', sponsorName: 'GearUp Cycles', title: 'Freshers cycle rentals', subtitle: 'Free first week · near main gate', emoji: '🚲', accent: '#1F8A5F', cta: 'View offer' },
-];
-
-/**
- * Interleave sponsored cards into the event feed at ~1 per `every` items.
- * Keeps the carousel majority-utility, per the ad-load rule.
- */
-export function happeningFeed(every = 5): HappeningItem[] {
-  const out: HappeningItem[] = [];
-  let sIdx = 0;
-  HAPPENING_EVENTS.forEach((item, i) => {
-    out.push(item);
-    if ((i + 1) % every === 0 && sIdx < HAPPENING_SPONSORED.length) {
-      out.push(HAPPENING_SPONSORED[sIdx++]);
-    }
-  });
-  // Ensure at least one sponsored card is visible in a short seed feed.
-  if (!out.some((x) => x.kind === 'sponsored') && HAPPENING_SPONSORED.length) {
-    out.splice(Math.min(3, out.length), 0, HAPPENING_SPONSORED[0]);
-  }
-  return out;
-}
+// Happening Around You is no longer seed data — it's a real GET /v1/happening
+// endpoint backed by the HappeningEvent table (see BUILD_PLAN.md 1.9 and
+// backend/src/routes/happening.routes.ts). The seed constants and sponsored-
+// card interleaving logic that used to live here have been removed along with
+// the sponsored-card feature itself, which is out of scope for launch.
 
 export interface Senior {
   id: string;

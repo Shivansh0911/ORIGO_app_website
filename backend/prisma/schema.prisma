@@ -415,6 +415,28 @@ model Event {
   community    Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
 }
 
+/// "Happening Around You" — the campus-wide events carousel on the home feed.
+/// Distinct from `Event` (which is community-scoped and requires joining a
+/// community first): this is campus-wide, no membership needed, and is meant
+/// to be the always-populated day-one surface — see BUILD_PLAN.md 1.9.
+/// Content ownership is manual (direct DB insert or a future admin route);
+/// there is deliberately no sponsored-card plumbing here, unlike the seed data
+/// this replaces — ad-load infrastructure is out of scope for launch.
+model HappeningEvent {
+  id          String   @id @default(cuid())
+  collegeName String
+  title       String
+  subtitle    String?
+  emoji       String   @default("📅")
+  accent      String   @default("#6C3DFF")
+  cta         String?
+  linkTo      String?
+  startAt     DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([collegeName, startAt])
+}
+
 model Ship {
   id          String     @id @default(cuid())
   initiatorId String

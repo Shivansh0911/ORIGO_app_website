@@ -228,15 +228,28 @@ deliberate and must not be "optimised away": without it, Pulse is a total bypass
 of the Rizz limits — respond to 40 pulses, get 40 conversations, never touch the
 cap. Make the UI honest about it ("Responding starts a Rizz session").
 
-### 1.9 ⬜ Happening — real content · **owner: Shivansh**
-Cut sponsored cards. Add a way for the team to enter real orientation events
-(admin endpoint or direct DB seed is fine). During orientation this should
-simply be the best campus schedule that exists.
+### 1.9 ✅ Happening — real content plumbing · **content ownership: Shivansh**
+Done 2026-07-30 — `HappeningEvent` model, `GET /v1/happening` (campus-scoped,
+sorted by `startAt`), frontend rewired to fetch it, sponsored-card logic
+deleted entirely (out of scope for launch). Seeded with 3 generic placeholder
+events (orientation / club fair / prom) scoped to the real campus name.
 
-**Owned by Shivansh with a weekly update commitment.** This is the only surface
-whose content we fully control, which makes it the day-one hero — the app is
-never empty regardless of user count if this has 15 real events in it. It also
-goes stale fastest, and a stale events list is visible evidence of abandonment.
+**Content itself is still Shivansh's, with a weekly update commitment** — the
+plumbing being done doesn't mean the job is done. Replace the 3 placeholders
+with real dates/venues before Aug 1, and keep adding through arrival week.
+This is the only surface whose content we fully control, which makes it the
+day-one hero — the app is never empty regardless of user count if this has
+15 real events in it. It also goes stale fastest, and a stale events list is
+visible evidence of abandonment.
+
+> ⚠️ **Found while wiring this up:** `backend/prisma/seed.ts`'s mock users are
+> scoped to `collegeName: 'IIT Delhi'`, not the real campus name
+> (`BITS Pilani — Hyderabad Campus` per `collegeDomains.ts`). A genuinely
+> BITS-verified test account will never see the mock users in Discover, and
+> now won't see mock Happening content either unless seeded separately (which
+> this commit does, scoped correctly). Worth fixing the mock data's campus
+> name at some point so local testing reflects reality — not urgent, but it
+> will confuse whoever debugs "why is Discover empty for my test account" next.
 
 ### 1.10 ⬜ Persist `joiningYear`, `degreeType`, `branch`, `hometown` on `User`
 `IntroCardPage` collects branch/batch/hometown and throws them all away (local

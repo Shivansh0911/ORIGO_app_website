@@ -213,6 +213,27 @@ async function main() {
   }
   console.log(`Seeded ${mockUsersData.length} mock users`);
 
+  // Happening Around You — see BUILD_PLAN.md 1.9. These three are generic
+  // placeholders (orientation / club fair / prom) safe to seed as real rows;
+  // Shivansh owns replacing/adding real dates, venues and events before and
+  // during arrival week. Scoped to the real campus name, not the "IIT Delhi"
+  // mock-user placeholder used above — this seed is meant to be visible to a
+  // genuinely BITS-verified account, not just other mock users.
+  const REAL_CAMPUS = 'BITS Pilani — Hyderabad Campus';
+  const now = new Date();
+  const happeningSeed = [
+    { title: 'Orientation Week kicks off', subtitle: 'Main Auditorium', emoji: '🎉', accent: '#6C3DFF', startAt: new Date(now.getTime() + 1 * 86400000) },
+    { title: 'Club & Society Fair', subtitle: 'Central Lawn', emoji: '🎪', accent: '#FF6B9D', startAt: new Date(now.getTime() + 3 * 86400000) },
+    { title: "Freshers' Night is coming", subtitle: 'Find your crew', emoji: '💃', accent: '#F59E0B', cta: 'Open Prom Radar', linkTo: '/app/prom', startAt: new Date(now.getTime() + 21 * 86400000) },
+  ];
+  const existingHappening = await prisma.happeningEvent.count({ where: { collegeName: REAL_CAMPUS } });
+  if (existingHappening === 0) {
+    await prisma.happeningEvent.createMany({
+      data: happeningSeed.map((e) => ({ ...e, collegeName: REAL_CAMPUS })),
+    });
+    console.log(`Seeded ${happeningSeed.length} placeholder Happening events — replace with real dates/venues before launch`);
+  }
+
   console.log('Database seeded successfully!');
 }
 
