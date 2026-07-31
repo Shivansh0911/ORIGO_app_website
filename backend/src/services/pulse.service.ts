@@ -88,6 +88,10 @@ export const PulseService = {
   async respondToPulse(pulseId: string, responderId: string) {
     const pulse = await prisma.pulse.findUnique({ where: { id: pulseId } });
     if (!pulse) throw new Error('PULSE_NOT_FOUND');
+    // Distinguish "filled up" from "timed out" — same effect on the caller
+    // (can't respond), but different reason, and telling someone a Pulse
+    // "expired" when it actually hit its author-chosen cap is misleading.
+    if (pulse.status === 'FULFILLED') throw new Error('PULSE_FULL');
     if (pulse.status !== 'ACTIVE' || pulse.expiresAt < new Date()) throw new Error('PULSE_EXPIRED');
     if (pulse.authorId === responderId) throw new Error('CANNOT_RESPOND_OWN_PULSE');
 

@@ -6,6 +6,7 @@ import { UserService } from '../services/user.service';
 import { isSupabaseReady, uploadToSupabase } from '../utils/supabase';
 import {
   UpdateProfileSchema,
+  UpdatePrivacySchema,
   UpdateInterestsSchema,
   ReportUserSchema,
   PushTokenSchema,
@@ -22,6 +23,14 @@ router.get('/me', authMiddleware, async (req, res) => {
 // SEC-16: Zod strips unknown keys before the service sees them; updateMe only picks safe fields
 router.patch('/me', authMiddleware, validate(UpdateProfileSchema), async (req, res) => {
   try { res.json(await UserService.updateMe(req.user!.userId, req.body)); }
+  catch { res.status(400).json({ error: 'Update failed' }); }
+});
+
+// Previously there was no route at all to change any UserPrivacy field —
+// every toggle (including allowShipsFrom, enforced in ship.service.ts) was
+// permanently stuck at its signup-time default.
+router.patch('/me/privacy', authMiddleware, validate(UpdatePrivacySchema), async (req, res) => {
+  try { res.json(await UserService.updatePrivacy(req.user!.userId, req.body)); }
   catch { res.status(400).json({ error: 'Update failed' }); }
 });
 

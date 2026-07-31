@@ -17,6 +17,17 @@ export interface User {
   degreeType: 'f' | 'h' | 'p' | null;
   branch: string | null;
   hometown: string | null;
+  privacy?: UserPrivacy;
+}
+
+export interface UserPrivacy {
+  showOnlineStatus: boolean;
+  showLastSeen: boolean;
+  allowMessagesFrom: 'EVERYONE' | 'MATCHES_ONLY' | 'NOBODY';
+  showCollegeTo: 'EVERYONE' | 'CAMPUS_ONLY' | 'MATCHES_ONLY' | 'NOBODY';
+  showAgeOnProfile: boolean;
+  discoverableBy: 'EVERYONE' | 'CAMPUS_ONLY' | 'MATCHES_ONLY' | 'NOBODY';
+  allowShipsFrom: boolean;
 }
 
 export interface PublicUser {

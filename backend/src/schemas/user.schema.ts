@@ -11,6 +11,20 @@ export const UpdateProfileSchema = z.object({
   hometown:   z.string().max(60).transform((s) => s.trim()).optional(),
 });
 
+// UserPrivacy was previously create-only (defaults set at signup, deleted on
+// account removal) with no update path anywhere — every toggle, including
+// allowShipsFrom, was permanently stuck at its default. All fields optional
+// so a client can patch just one setting at a time.
+export const UpdatePrivacySchema = z.object({
+  showOnlineStatus:  z.boolean().optional(),
+  showLastSeen:      z.boolean().optional(),
+  allowMessagesFrom: z.enum(['EVERYONE', 'MATCHES_ONLY', 'NOBODY']).optional(),
+  showCollegeTo:     z.enum(['EVERYONE', 'CAMPUS_ONLY', 'MATCHES_ONLY', 'NOBODY']).optional(),
+  showAgeOnProfile:  z.boolean().optional(),
+  discoverableBy:    z.enum(['EVERYONE', 'CAMPUS_ONLY', 'MATCHES_ONLY', 'NOBODY']).optional(),
+  allowShipsFrom:    z.boolean().optional(),
+});
+
 export const UpdateInterestsSchema = z.object({
   interestIds: z.array(z.string().cuid()).max(10),
 });

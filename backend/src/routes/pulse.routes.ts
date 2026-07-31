@@ -41,8 +41,11 @@ router.post('/:pulseId/respond', async (req, res) => {
     res.status(201).json(response);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to respond';
-    const status = msg === 'PULSE_NOT_FOUND' ? 404 : msg === 'ALREADY_RESPONDED' ? 409 : 400;
-    res.status(status).json({ error: msg });
+    const status = msg === 'PULSE_NOT_FOUND' ? 404
+      : (msg === 'ALREADY_RESPONDED' || msg === 'PULSE_FULL') ? 409
+      : 400;
+    const message = msg === 'PULSE_FULL' ? "This Pulse is full — they've got enough people already." : undefined;
+    res.status(status).json({ error: msg, message });
   }
 });
 

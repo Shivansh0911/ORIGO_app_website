@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, ChevronRight, Trash2, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { authApi } from '../../api/endpoints';
+import { authApi, usersApi } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
 import { useSocketStore } from '../../store/socketStore';
 import Modal from '../../components/ui/Modal';
@@ -11,7 +11,28 @@ export default function SettingsPage() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const { clearAuth } = useAuthStore();
+  const { user, setUser, clearAuth } = useAuthStore();
+  const [shipsToggling, setShipsToggling] = useState(false);
+
+  // allowShipsFrom previously had enforcement (ship.service.ts) but no way to
+  // actually change it — UserPrivacy had no update route at all. Defaults to
+  // true (matching the schema default) until the user's own value loads.
+  const allowShipsFrom = user?.privacy?.allowShipsFrom ?? true;
+
+  const toggleAllowShips = async () => {
+    if (!user) return;
+    setShipsToggling(true);
+    const next = !allowShipsFrom;
+    try {
+      const { data } = await usersApi.updatePrivacy({ allowShipsFrom: next });
+      setUser({ ...user, privacy: data });
+      toast.success(next ? 'Friends can ship you again' : "You won't be shipped anymore");
+    } catch {
+      toast.error('Could not update — try again');
+    } finally {
+      setShipsToggling(false);
+    }
+  };
   const { disconnect } = useSocketStore();
   const navigate = useNavigate();
 
@@ -76,6 +97,22 @@ export default function SettingsPage() {
         <div>
           <p className="text-xs text-text-muted uppercase tracking-wider px-2 mb-2">Privacy & Safety</p>
           <div className="bg-card border border-border rounded-2xl overflow-hidden divide-y divide-border">
+            <div className="w-full flex items-center gap-3 px-4 py-3.5">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-text-primary">Allow Ship requests</p>
+                <p className="text-xs text-text-muted mt-0.5">Let friends suggest you and someone else would vibe</p>
+              </div>
+              <button
+                onClick={toggleAllowShips}
+                disabled={shipsToggling}
+                role="switch"
+                aria-checked={allowShipsFrom}
+                aria-label="Allow Ship requests"
+                className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${allowShipsFrom ? 'bg-primary' : 'bg-border'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${allowShipsFrom ? 'translate-x-5' : ''}`} />
+              </button>
+            </div>
             <SettingRow label="Privacy Policy" onClick={() => window.open('/privacy', '_blank')} />
             <SettingRow label="Terms of Service" onClick={() => window.open('/terms', '_blank')} />
             <SettingRow label="Data Export" description="Download a copy of your data" onClick={() => toast('Coming soon — data export will be emailed to you.')} />

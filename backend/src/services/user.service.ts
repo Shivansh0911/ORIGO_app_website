@@ -40,6 +40,19 @@ export const UserService = {
     });
   },
 
+  async updatePrivacy(userId: string, data: {
+    showOnlineStatus?: boolean; showLastSeen?: boolean; allowMessagesFrom?: string;
+    showCollegeTo?: string; showAgeOnProfile?: boolean; discoverableBy?: string; allowShipsFrom?: boolean;
+  }) {
+    // upsert, not update — a row always exists post-signup (auth.service.ts
+    // creates one), but upsert makes this safe even if that ever changes.
+    return prisma.userPrivacy.upsert({
+      where: { userId },
+      create: { userId, ...data } as Parameters<typeof prisma.userPrivacy.upsert>[0]['create'],
+      update: data as Parameters<typeof prisma.userPrivacy.upsert>[0]['update'],
+    });
+  },
+
   async updateInterests(userId: string, interestIds: string[]) {
     await prisma.$transaction([
       prisma.userInterest.deleteMany({ where: { userId } }),

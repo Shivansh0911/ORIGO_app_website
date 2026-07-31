@@ -3,7 +3,7 @@ import type {
   User, PublicUser, Interest, RizzSession, RizzMessage,
   Conversation, Message, Community, Post, Comment,
   CommunityEvent, Notification, Ship, LoginResponse,
-  Pulse, PulseResponse, PulseCategory,
+  Pulse, PulseResponse, PulseCategory, UserPrivacy,
 } from '../types';
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -37,6 +37,9 @@ export const usersApi = {
 
   updateMe: (body: Partial<Pick<User, 'name' | 'bio' | 'gender' | 'lookingFor' | 'branch' | 'hometown'>>) =>
     api.patch<User>('/users/me', body),
+
+  updatePrivacy: (body: Partial<UserPrivacy>) =>
+    api.patch<UserPrivacy>('/users/me/privacy', body),
 
   uploadAvatar: (file: File) => {
     const fd = new FormData();
