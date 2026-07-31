@@ -135,50 +135,24 @@ possible moment. Behaviour must change by population:
 **Acceptance:** a verified user with hometown + branch set sees at least two
 populated rows on first load, without anyone having posted anything.
 
-### 1.2 ⬜ `POST /v1/events` sink + `AnalyticsEvent` model
-The web client already emits batched, consent-gated telemetry to this endpoint —
-**it does not exist**, so every event is dropped after buffering. See
-`origo-web/src/lib/telemetry.ts`.
+### 1.2 ✅ `POST /v1/events` sink + `AnalyticsEvent` model
+Done 2026-07-29. Append-only table, batched, auth-optional, never fails the
+request. See `backend/src/routes/events.routes.ts`.
 
-- Append-only table: `name`, `props` (Json), `userId?`, `sessionId`, `ts`, `receivedAt`.
-- Accept batches (`{ events: [...] }`), validate loosely, never fail the request.
-- ⚠️ Build this **before** launch traffic. This data cannot be backfilled.
+### 1.3 ✅ Rizz allocation controls
+Done 2026-07-29 — decline permanence, finite premium cap, inbound capacity cap
+(`K=3`). All config in `backend/src/config/matching.ts`, env-overridable.
+Closes B1, B2.
 
-### 1.3 ⬜ Rizz allocation controls
-Per [decisions/0003](decisions/0003-matching-strategy.md) Layer 0 + [matching-spec §6](matching-spec.md).
+### 1.3a ✅ Rizz — consecutive-message cap + opaque declines
+Done 2026-07-29 — max 2 consecutive messages, `DECLINED` masked to `EXPIRED`
+for the initiator. See `rizz.service.ts`. Openers-from-prompt-reactions still
+waits on the Discover rewrite (1.1).
 
-- **Decline is permanent.** Currently a `DECLINED` session is revived by the
-  trailing `upsert` with counters reset — a declined user can re-approach
-  immediately and indefinitely. *Harassment vector; fix first.*
-- **Cap premium.** `if (!initiator?.isPremium)` exempts premium from the daily
-  limit entirely. Apply a finite higher limit instead.
-- **Inbound capacity cap.** Reject when target holds ≥ `K` pending
-  (`ACTIVE`|`WAITING`) sessions. `K = 3`, env-configurable.
-- Config in `backend/src/config/matching.ts`, all env-overridable — these need
-  tuning *during* freshers week without a redeploy.
-
-### 1.3a ⬜ Rizz — consecutive-message cap + opaque declines
-Both change the signature mechanic; both decided 2026-07-29.
-
-- **Max 2 consecutive messages without a reply.** The remaining budget unlocks
-  once the target responds. Keeps the "Rizz In 5" brand while making the
-  incentives match the philosophy — today the design permits bursting all five
-  into silence, which from the receiving side is a wall of text from a stranger,
-  received repeatedly by the minority side on a 75:25 campus.
-- **Never surface `DECLINED` to the initiator** — show it as expired/no response.
-  Campus rejection has a face and a timetable; an explicit "they declined you"
-  about someone you'll see in the mess tomorrow is socially corrosive. The
-  decline still works exactly as designed internally (permanent — B1).
-- **Openers seeded from prompt reactions** (1.1): reaching out from a specific
-  prompt answer pre-fills the opener with that context, so the first message is
-  never a blank page.
-
-### 1.4 ⬜ Ship a Friend — relax eligibility + enforce privacy
-- Eligibility: anyone in your batch/campus, **not** only accepted matches
-  (currently requires 2 accepted matches — unusable on day 1).
-- **Enforce `UserPrivacy.allowShipsFrom`** — the field exists and is checked
-  *nowhere* in the backend. The privacy toggle is currently decorative.
-- Rate-limit ships per user per day.
+### 1.4 ✅ Ship a Friend — relax eligibility + enforce privacy
+Done 2026-07-29 — campus-wide eligibility, `allowShipsFrom` enforced, daily cap.
+Closes B4. Extended 2026-07-29 by Shivansh with block-checks across all three
+parties and clearer error handling — same shape, no conflict.
 
 ### 1.5 ⬜ Tab restructure → 3 tabs
 Each tab answers exactly one question:
@@ -196,19 +170,41 @@ doesn't read as a people-browsing product on open.
 We Met, Quests, Premium, Boost, Sticker/Rizz/ViewShips, Freshers HQ hub.
 Hide — do not delete. Empty surfaces are the main cause of "this app is dead."
 
-### 1.7 ❄️ ~~Discover: change the action verbs~~ — **superseded by 1.1**
-This said change `Like`/`Pass` → `Say hi`/`Skip`. It was written when Discover
-was a swipe card stack. In the chips-over-list + profile model there **is no card
-stack and no Like/Pass at all** — the only action is "Say hi" from a profile,
-optionally seeded by a prompt reaction. Nothing to change; the swipe UI is
-deleted, not relabelled.
+### 1.7 ✅ Discover: interim de-dating (do now, ahead of the full rewrite)
+
+> **⚠️ For Shivansh — flagging directly, since this shipped after your BLOCK-3
+> commit and you likely haven't seen [0004](decisions/0004-dating-as-opt-in-episodic-surface.md) yet:**
+> Discover's intent chips still include `DATING` as a first-class option on the
+> main people surface. That's a considered decision we reversed — romantic
+> discovery is opt-in via Radar, never the default surface, because the moment
+> Origo reads as a dating app to a new user, the majority who'd never install
+> one are gone, and they're the network. Your BLOCK-3 graph/responsiveness
+> wiring is unaffected and still correct under the fix below — it scores
+> candidates regardless of which intents the UI exposes.
+
+The full Discover rewrite (chips-over-list + Hinge-style profiles, 1.1) is on
+`feat/discover-redesign` and deliberately deferred — it's the biggest, riskiest
+piece and everything else ships without it. But leaving `DATING` visible on the
+current swipe UI until that lands means launching with exactly the positioning
+problem we spent a session arguing against. So: a small interim fix, decoupled
+from the rewrite —
+
+- Remove `DATING` from the intent chip options on the current Discover page.
+  Engine still supports the intent; UI defaults to and only offers `FRIENDS` /
+  `NETWORKING` / `STUDY_BUDDY` until the rewrite ships.
+- Relabel `Like`/`Pass` → `Say hi`/`Skip` on the existing swipe cards — "Pass" is
+  a judgment on a person you'll sit next to in lab tomorrow.
+- This is throwaway UI churn once 1.1 lands, and that's fine — it's ten minutes
+  against a real positioning risk for the gap in between.
 
 ### 1.8 ⬜ Manual verification approval
 Fallback for the first week if a fresher's college email isn't issued yet.
 Admin-only endpoint to approve a pending user + a minimal list UI. Student-ID
 upload already exists (`uploadStudentId`, private Supabase bucket).
 
-### 1.9a ⬜ Pulse — author-set response cap
+### 1.9a ✅ Pulse — author-set response cap
+Done 2026-07-29 — `maxResponses` on creation, enforced on response, status
+flips to `FULFILLED` at cap. Closes B3. Details below for reference.
 Closes B3 (uncapped inbound via Pulse) without imposing an arbitrary limit: the
 **author chooses how many people they want**, which is consent by their own
 choice rather than a rule we impose.
@@ -318,6 +314,35 @@ All-campus (max participation expected from freshers + sophomores).
 
 ---
 
+## Recent activity (folded in from `ORIGO_STATUS.md`, 2026-07-29/30)
+
+Shivansh shipped three commits independently, all reviewed and aligned except
+the one flagged in 1.7 above:
+
+- **BLOCK-3 — Discover graph/responsiveness wiring.** `discover.service.ts` now
+  returns `communities[]` and a `responsiveness` proxy per candidate, and
+  `DiscoverPage.tsx` feeds them into `rankCandidates` as `contextById`. This
+  activates the Adamic–Adar graph term (`matching.ts`'s dominant weight for
+  `FRIENDS`, 0.34), which was silently zeroed since it had no data to score
+  against. Correctly advances [matching-spec](matching-spec.md) §3–5 ahead of
+  schedule — the ranking engine work survives the Discover UI rewrite (1.1)
+  regardless of which layout consumes it.
+- **Chat WebSocket fix.** Real root-cause diagnosis: the Socket.IO connection
+  handler awaited ~200-800ms of Redis+Supabase writes *before* registering
+  `join_conversation`, so a client that joined immediately on connect lost the
+  event before the listener existed. Fixed by making the handler synchronous
+  and firing presence updates fire-and-forget. Also closed three
+  service/frontend type-shape mismatches (`getConversations`, `getMessages`,
+  event name casing) and the same Rizz `ACCEPTED` dead-end fixed independently
+  in BLOCK-3. Verified with an actual WS test script, not just typecheck.
+- **Moderation.** Replaced the placeholder 6-regex list with the `bad-words`
+  npm package (already a dependency) plus the Hindi/Hinglish patterns it
+  misses. Closes the SEC-10 stub note.
+
+`ORIGO_STATUS.md` (root-level doc he wrote, overlapping this file) has been
+folded in and removed — see "Secrets, storage, file map" below for what it
+added that this doc didn't already have.
+
 ## Known bugs — fix alongside the phase they belong to
 
 Found by inspection this cycle. Each is real and verified in code; none were
@@ -325,12 +350,12 @@ caught by typecheck or tests.
 
 | # | Bug | Where | Severity |
 |---|---|---|---|
-| B1 ⬜ | **Declined Rizz can be revived.** `startSession` rejects only `ACTIVE`/`WAITING`/`ACCEPTED`; a `DECLINED` session falls through to the trailing `upsert`, which resets counters and reactivates it. A declined user can re-approach immediately, forever. | `rizz.service.ts:15-39` | **Critical** — harassment vector |
-| B2 ⬜ | **Premium bypasses the Rizz daily limit entirely.** `if (!initiator?.isPremium)` skips the cap, so a paying user can cold-contact unlimited people. On a 75:25 campus this sells the ability to flood the minority side. | `rizz.service.ts:26` | **Critical** |
-| B3 ⬜ | **Pulse responses spawn uncapped Rizz sessions.** `respondToPulse` calls `RizzService.startSession` per responder, so a popular Pulse generates unbounded inbound sessions — the flooding hole again, through a different door. Fixed by the author-set cap (1.9a). *Note: the budget consumption is correct and must stay — see 1.9a.* | `pulse.service.ts:88-109` | **High** |
-| B4 ⬜ | **`UserPrivacy.allowShipsFrom` is never enforced.** The field exists in the schema and is checked nowhere in the backend. The privacy toggle is decorative — users who disabled ships still receive them. | schema vs `ship.service.ts` | **High** — privacy |
+| B1 ✅ | **Declined Rizz can be revived.** `startSession` rejects only `ACTIVE`/`WAITING`/`ACCEPTED`; a `DECLINED` session falls through to the trailing `upsert`, which resets counters and reactivates it. A declined user can re-approach immediately, forever. | `rizz.service.ts:15-39` | **Critical** — harassment vector |
+| B2 ✅ | **Premium bypasses the Rizz daily limit entirely.** `if (!initiator?.isPremium)` skips the cap, so a paying user can cold-contact unlimited people. On a 75:25 campus this sells the ability to flood the minority side. | `rizz.service.ts:26` | **Critical** |
+| B3 ✅ | **Pulse responses spawn uncapped Rizz sessions.** `respondToPulse` calls `RizzService.startSession` per responder, so a popular Pulse generates unbounded inbound sessions — the flooding hole again, through a different door. Fixed by the author-set cap (1.9a). *Note: the budget consumption is correct and must stay — see 1.9a.* | `pulse.service.ts:88-109` | **High** |
+| B4 ✅ | **`UserPrivacy.allowShipsFrom` is never enforced.** The field exists in the schema and is checked nowhere in the backend. The privacy toggle is decorative — users who disabled ships still receive them. | schema vs `ship.service.ts` | **High** — privacy |
 | B5 ✅ | ~~Batch Space is entirely a mock~~ — resolved by cutting the feature (task 1.1). Delete the dead code rather than fixing it. | `BatchSpacePage.tsx` | Closed |
-| B6 ⬜ | **Telemetry posts to a route that doesn't exist.** Client buffers, retries, and silently drops. All product data since launch of the pipeline is lost. | `telemetry.ts:93` | **High** — see 1.2 |
+| B6 ✅ | **Telemetry posts to a route that doesn't exist.** Client buffers, retries, and silently drops. All product data since launch of the pipeline is lost. | `telemetry.ts:93` | **High** — see 1.2 |
 | B7 ⬜ | **Discover scores only the 100 most-recently-active users.** A highly compatible but less-active person is unreachable regardless of score. | `discover.service.ts:79-88` | **Medium** — see 3.1 |
 | B8 ⬜ | **Premium + Boost don't validate order ownership.** Unlike the IAP flow, `verifyAndActivate`/`activateBoost` check only that the HMAC is valid — not that the order was raised for this user and hasn't been redeemed. Low risk while the secret stays private; must close before real keys. | `payment.service.ts` (`SEC-02 TODO`) | **Medium** |
 | B9 ⬜ | **Production without Razorpay keys silently accepts mock payments.** Pseudo-mode keys off "are real credentials present", so a deploy that forgets them accepts `mock_sig`. Add `RAZORPAY_KEY_*` to `checkEnv()` so production refuses to boot without them. | `payment.service.ts` + `server.ts` | **Medium** |
@@ -386,3 +411,71 @@ We Met · Freshers Quests · Premium · Profile Boost · Sticker/Rizz/ViewShips 
 sponsored cards · cross-campus discovery · any ML ranker · native mobile app.
 
 Hidden behind flags, not deleted. Each returns when there's density to justify it.
+
+---
+
+## Reference — secrets, storage, architecture
+
+Folded in from `ORIGO_STATUS.md`. Kept here rather than in a second doc so there
+is one place this can go stale.
+
+### Secrets required in production
+
+```
+DATABASE_URL          # Postgres
+REDIS_URL             # rediss:// (TLS) if using Upstash — plain redis:// hangs on auth otherwise
+JWT_SECRET            # 64-hex random
+JWT_REFRESH_SECRET    # 64-hex random
+FIELD_ENCRYPTION_KEY  # 64-hex random (AES-256-GCM)
+BLIND_INDEX_KEY       # 64-hex random (HMAC blind index)
+RESEND_API_KEY        # college email OTP fallback path
+GOOGLE_CLIENT_ID      # Google OAuth
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+# Deliberately NOT set in prod yet — pseudo-mode is intentional, Ship is free for v1:
+# RAZORPAY_KEY_ID
+# RAZORPAY_KEY_SECRET
+```
+
+Server throws at boot if any required secret is missing or malformed (SEC-01/
+SEC-03). Do not add fallback defaults.
+
+### Supabase Storage
+
+Two buckets: `origo` (**public** — avatars) and `origo-private` (**private** —
+student ID uploads for manual verification review).
+
+### Architecture snapshot
+
+| Layer | Stack |
+|---|---|
+| Web | React 18 + Vite + TS · Tailwind · TanStack Query · Zustand |
+| Backend | Express + TS · Prisma · Postgres |
+| Real-time | Socket.IO, JWT auth handshake, per-room events |
+| Cache / rate limit | Redis (Upstash `rediss://` in prod) |
+| Storage | Supabase Storage (see above) |
+| Email | Resend (OTP fallback only) |
+| Payments | Razorpay, pseudo-mode until real keys are set |
+| Mobile | Expo app exists in `origo-app/`, **not shipped** — web shows "Coming Soon" |
+
+### File map — where things live
+
+```
+backend/src/
+  config/
+    collegeDomains.ts   # campus allowlist — do NOT expand without Aryan
+    matching.ts         # all allocation limits, env-overridable
+  services/
+    rizz.service.ts | discover.service.ts | ship.service.ts | pulse.service.ts
+    payment.service.ts  # pseudo-mode when Razorpay keys absent
+  routes/events.routes.ts  # analytics sink
+  prisma/schema.prisma, prisma/migrations/
+
+origo-web/src/
+  lib/
+    matching.ts    # client-side ranking engine — portable to backend, don't fork logic
+    introCard.ts   # canvas renderer for the Intro Card
+    telemetry.ts   # track() — consent-gated, batched
+  pages/app/
+    DiscoverPage.tsx | RizzChatPage.tsx | PulsePage.tsx | ShipAFriendPage.tsx
+```
