@@ -12,6 +12,11 @@ export interface User {
   interests: UserInterest[];
   lastSeen: string | null;
   needsDob?: boolean;
+  /** Derived from the verified college email — read-only, never sent on update. */
+  joiningYear: number | null;
+  degreeType: 'f' | 'h' | 'p' | null;
+  branch: string | null;
+  hometown: string | null;
 }
 
 export interface PublicUser {

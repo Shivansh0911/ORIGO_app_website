@@ -3,6 +3,7 @@ import { Download, Share2, Copy, Check, Wand2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
 import { useFreshersStore } from '../../store/freshersStore';
+import { usersApi } from '../../api/endpoints';
 import {
   renderIntroCard, downloadDataUrl, shareCard,
   CARD_THEMES, type CardFormat, type CardTheme, type IntroCardData,
@@ -16,8 +17,15 @@ export default function IntroCardPage() {
   const user = useAuthStore((s) => s.user);
   const completeQuest = useFreshersStore((s) => s.completeQuest);
 
-  const [branchYear, setBranchYear] = useState("Batch of '30");
-  const [hometown, setHometown] = useState('');
+  // `branch` is a short, user-editable field (persisted to the profile) —
+  // joiningYear is derived from the verified college ID and never
+  // user-settable. Students identify by *joining* year ("23 batch"), not
+  // passout year, so the combined label is built from joiningYear, never
+  // hardcoded (see BUILD_PLAN.md 1.10).
+  const [branch, setBranch] = useState(() => user?.branch ?? '');
+  const [hometown, setHometown] = useState(() => user?.hometown ?? '');
+  const branchYear = [branch, user?.joiningYear ? `Batch of ${user.joiningYear}` : null]
+    .filter(Boolean).join(' · ');
   const [promptLabel, setPromptLabel] = useState(ICEBREAKER_PROMPTS[0]);
   const [promptAnswer, setPromptAnswer] = useState('');
   const [format, setFormat] = useState<CardFormat>('story');
@@ -52,6 +60,21 @@ export default function IntroCardPage() {
       theme,
     };
   }, [user, branchYear, hometown, interests, promptLabel, promptAnswer, profileUrl, format, theme]);
+
+  // Persist branch/hometown to the profile once they settle — these were
+  // previously collected here and thrown away (local state only), despite
+  // being the strongest cold-start signals for matching and Discover context.
+  useEffect(() => {
+    if (!user) return;
+    const t = setTimeout(() => {
+      const changed = branch !== (user.branch ?? '') || hometown !== (user.hometown ?? '');
+      if (!changed) return;
+      usersApi.updateMe({ branch: branch || undefined, hometown: hometown || undefined }).catch(() => {
+        // Best-effort — the card itself doesn't depend on this succeeding.
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [user, branch, hometown]);
 
   // Re-render the card (debounced) whenever inputs change.
   useEffect(() => {
@@ -186,13 +209,16 @@ export default function IntroCardPage() {
           </div>
 
           <label className="flex flex-col gap-1">
-            <span className="text-sm text-text-secondary font-medium">Branch &amp; batch</span>
+            <span className="text-sm text-text-secondary font-medium">Branch</span>
             <input
-              value={branchYear}
-              onChange={(e) => setBranchYear(e.target.value)}
-              placeholder="B.E. CSE · Batch of '30"
+              value={branch}
+              onChange={(e) => setBranch(e.target.value)}
+              placeholder="CSE"
               className="w-full bg-card border border-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition-colors"
             />
+            {user.joiningYear && (
+              <span className="text-xs text-text-muted mt-0.5">Batch of {user.joiningYear} · from your verified email</span>
+            )}
           </label>
 
           <label className="flex flex-col gap-1">

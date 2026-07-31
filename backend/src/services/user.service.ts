@@ -18,9 +18,13 @@ export const UserService = {
 
   async updateMe(userId: string, data: {
     name?: string; bio?: string; gender?: string; lookingFor?: string[]; avatarUrl?: string; pushToken?: string;
+    branch?: string; hometown?: string;
   }) {
-    // SEC-16: explicitly pick — never spread req.body directly into a Prisma write
-    moderateText(data.bio, data.name);
+    // SEC-16: explicitly pick — never spread req.body directly into a Prisma write.
+    // Note joiningYear/degreeType are deliberately absent from this list — they're
+    // derived from the verified college ID (see utils/collegeId.ts) and must never
+    // be settable by the user directly.
+    moderateText(data.bio, data.name, data.branch, data.hometown);
     const safe: Record<string, unknown> = {};
     if (data.name      !== undefined) safe['name']       = data.name;
     if (data.bio       !== undefined) safe['bio']        = data.bio;
@@ -28,6 +32,8 @@ export const UserService = {
     if (data.lookingFor !== undefined) safe['lookingFor'] = data.lookingFor;
     if (data.avatarUrl !== undefined) safe['avatarUrl']  = data.avatarUrl;
     if (data.pushToken !== undefined) safe['pushToken']  = data.pushToken;
+    if (data.branch    !== undefined) safe['branch']     = data.branch;
+    if (data.hometown  !== undefined) safe['hometown']   = data.hometown;
     return prisma.user.update({
       where: { id: userId },
       data: safe as Parameters<typeof prisma.user.update>[0]['data'],

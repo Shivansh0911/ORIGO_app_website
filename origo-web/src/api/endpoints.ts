@@ -35,7 +35,7 @@ export const authApi = {
 export const usersApi = {
   getMe: () => api.get<User>('/users/me'),
 
-  updateMe: (body: Partial<Pick<User, 'name' | 'bio' | 'gender' | 'lookingFor'>>) =>
+  updateMe: (body: Partial<Pick<User, 'name' | 'bio' | 'gender' | 'lookingFor' | 'branch' | 'hometown'>>) =>
     api.patch<User>('/users/me', body),
 
   uploadAvatar: (file: File) => {

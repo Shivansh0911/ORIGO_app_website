@@ -5,6 +5,10 @@ export const UpdateProfileSchema = z.object({
   bio:        z.string().max(200).optional(),
   gender:     z.enum(['MALE', 'FEMALE', 'NON_BINARY', 'PREFER_NOT_TO_SAY']).optional(),
   lookingFor: z.array(z.enum(['FRIENDS', 'DATING', 'NETWORKING', 'STUDY_BUDDY'])).max(4).optional(),
+  // branch/hometown are user-editable — unlike joiningYear/degreeType, they
+  // aren't encoded in the verified college ID, so there's nothing to derive.
+  branch:     z.string().max(60).transform((s) => s.trim()).optional(),
+  hometown:   z.string().max(60).transform((s) => s.trim()).optional(),
 });
 
 export const UpdateInterestsSchema = z.object({

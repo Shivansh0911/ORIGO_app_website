@@ -10,6 +10,7 @@ import { hashForIndex } from '../utils/blindIndex';
 import { findCollegeByEmail } from '../config/collegeDomains';
 import { issueTokenPair, invalidateAllSessions } from '../utils/jwt';
 import { resolveCollegeFromWorkspaceDomain } from '../utils/collegeDomains';
+import { parseBitsId } from '../utils/collegeId';
 
 // PSEUDO: Set GOOGLE_CLIENT_ID in Railway env vars
 // → Get it from console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client ID
@@ -163,6 +164,11 @@ export const AuthService = {
         if (!user.collegeEmail) {
           updates.collegeEmail = encrypt(email);
           updates.collegeEmailHash = hashForIndex(email);
+          const parsed = parseBitsId(email);
+          if (parsed) {
+            if (user.joiningYear == null) updates.joiningYear = parsed.joiningYear;
+            if (user.degreeType == null) updates.degreeType = parsed.degreeType;
+          }
         }
       }
       if (Object.keys(updates).length > 0) {
@@ -193,6 +199,12 @@ export const AuthService = {
                   collegeName: campus.collegeName,
                   collegeEmail: encrypt(email),
                   collegeEmailHash: hashForIndex(email),
+                  ...(() => {
+                    const parsed = parseBitsId(email);
+                    return parsed
+                      ? { joiningYear: parsed.joiningYear, degreeType: parsed.degreeType }
+                      : {};
+                  })(),
                 }
               : {}),
           },
@@ -266,6 +278,11 @@ export const AuthService = {
       updates.collegeEmailHash = hashForIndex(collegeEmail);
       const college = findCollegeByEmail(collegeEmail);
       if (college) updates.collegeName = college.collegeName;
+      const parsed = parseBitsId(collegeEmail);
+      if (parsed) {
+        updates.joiningYear = parsed.joiningYear;
+        updates.degreeType = parsed.degreeType;
+      }
     }
 
     await prisma.user.update({ where: { id: userId }, data: updates as Parameters<typeof prisma.user.update>[0]['data'] });

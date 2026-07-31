@@ -13,9 +13,15 @@ import { track } from '../../lib/telemetry';
 import { DiscoverSkeleton } from '../../components/ui/Skeleton';
 import EmptyState from '../../components/ui/EmptyState';
 
+// DATING is deliberately not offered here. Origo is a socialising platform,
+// not a dating app — romantic discovery is opt-in and episodic (Radar events),
+// never the default surface (see decisions/0004). Surfacing "Dating" as a chip
+// on the main people-browsing page re-codes the whole product as a dating app
+// for anyone who taps it, regardless of what the rest of the copy says. The
+// scoring engine still supports the intent; this UI just never asks for it.
+// Interim fix ahead of the full Discover rewrite (BUILD_PLAN.md 1.1/1.7).
 const INTENTS: { key: Intent; label: string; emoji: string }[] = [
   { key: 'FRIENDS', label: 'Friends', emoji: '🤝' },
-  { key: 'DATING', label: 'Dating', emoji: '💜' },
   { key: 'NETWORKING', label: 'Networking', emoji: '🚀' },
   { key: 'STUDY_BUDDY', label: 'Study buddy', emoji: '📚' },
 ];
@@ -154,7 +160,7 @@ function ProfileCard({ user, onLike, onPass, onRizz }: {
             onClick={onPass}
             className="flex-1 flex items-center justify-center gap-2 py-3 bg-muted hover:bg-border rounded-xl transition-colors text-text-secondary"
           >
-            <X size={18} /> Pass
+            <X size={18} /> Skip
           </button>
           <button
             onClick={onRizz}
@@ -167,7 +173,7 @@ function ProfileCard({ user, onLike, onPass, onRizz }: {
             onClick={onLike}
             className="flex-1 flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary-light rounded-xl transition-colors text-white font-medium"
           >
-            <Heart size={18} /> Like
+            <Heart size={18} /> Say hi
           </button>
         </div>
       </div>
@@ -177,7 +183,11 @@ function ProfileCard({ user, onLike, onPass, onRizz }: {
 
 export default function DiscoverPage() {
   const user = useAuthStore((s) => s.user);
-  const [intent, setIntent] = useState<Intent>(() => primaryIntent(user?.lookingFor ?? []));
+  const [intent, setIntent] = useState<Intent>(() => {
+    const derived = primaryIntent(user?.lookingFor ?? []);
+    // Guard against a DATING-only lookingFor selecting a chip we don't render.
+    return INTENTS.some((i) => i.key === derived) ? derived : 'FRIENDS';
+  });
   const [page, setPage] = useState(1);
   const [seen, setSeen] = useState<Set<string>>(new Set());
 

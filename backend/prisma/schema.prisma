@@ -185,6 +185,13 @@ model User {
   collegeName     String?
   collegeEmail     String?   @unique
   collegeEmailHash String?   @unique   // SEC-03: deterministic HMAC blind index for dedup lookups
+  /// Derived from the verified college email's local part (e.g. f20230141 ->
+  /// 2023), never self-reported. Read-only to the user — see parseBitsId().
+  joiningYear     Int?
+  /// f = first degree, h = higher degree, p = PhD. Same source as joiningYear.
+  degreeType      String?   @db.VarChar(1)
+  branch          String?
+  hometown        String?
   isVerified      Boolean   @default(false)
   verifiedAt      DateTime?
   studentIdUrl    String?
