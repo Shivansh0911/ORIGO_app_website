@@ -4,9 +4,11 @@ import { authMiddleware } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { UserService } from '../services/user.service';
 import { isSupabaseReady, uploadToSupabase } from '../utils/supabase';
+import { ModerationError } from '../utils/moderateText';
 import {
   UpdateProfileSchema,
   UpdatePrivacySchema,
+  UpdatePromptsSchema,
   UpdateInterestsSchema,
   ReportUserSchema,
   PushTokenSchema,
@@ -32,6 +34,16 @@ router.patch('/me', authMiddleware, validate(UpdateProfileSchema), async (req, r
 router.patch('/me/privacy', authMiddleware, validate(UpdatePrivacySchema), async (req, res) => {
   try { res.json(await UserService.updatePrivacy(req.user!.userId, req.body)); }
   catch { res.status(400).json({ error: 'Update failed' }); }
+});
+
+// Replaces all prompt answers at once — that's how the composer edits them,
+// and it makes reordering free. Moderation runs in the service.
+router.put('/me/prompts', authMiddleware, validate(UpdatePromptsSchema), async (req, res) => {
+  try { res.json(await UserService.updatePrompts(req.user!.userId, req.body.prompts)); }
+  catch (e: unknown) {
+    if (e instanceof ModerationError) { res.status(422).json({ error: 'CONTENT_MODERATION_FAILED' }); return; }
+    res.status(400).json({ error: 'Update failed' });
+  }
 });
 
 router.post('/me/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {

@@ -25,6 +25,17 @@ export const UpdatePrivacySchema = z.object({
   allowShipsFrom:    z.boolean().optional(),
 });
 
+// Up to 3 prompt answers. Replaces the whole set on write (simpler than
+// per-prompt CRUD and matches how the composer edits them — all at once).
+// Answer max is 150 to match the column; the Intro Card renders a shortened
+// version rather than requiring a separate short field.
+export const UpdatePromptsSchema = z.object({
+  prompts: z.array(z.object({
+    label:  z.string().min(1).max(40),
+    answer: z.string().min(1).max(150).transform((s) => s.trim()),
+  })).max(3),
+});
+
 export const UpdateInterestsSchema = z.object({
   interestIds: z.array(z.string().cuid()).max(10),
 });

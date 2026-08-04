@@ -218,6 +218,7 @@ model User {
   updatedAt       DateTime  @updatedAt
 
   interests       UserInterest[]
+  prompts         UserPrompt[]
   sentMatches     Match[]   @relation("MatchSender")
   receivedMatches Match[]   @relation("MatchReceiver")
   conversations   ConversationParticipant[]
@@ -496,6 +497,34 @@ model Notification {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
+}
+
+/// A prompt answer on someone's profile — "Hot take · Pineapple belongs on
+/// pizza". The single highest-signal thing on a profile: a bio produces
+/// "chill guy, love music and travelling", a prompt produces something
+/// specific enough to actually reply to.
+///
+/// `label` is chosen from a fixed set (client-side ICEBREAKER_PROMPTS) so
+/// profiles stay scannable and comparable; `answer` is free text and is the
+/// part that carries personality. Free text on a public surface, so it runs
+/// through moderateText() on write like every other UGC path.
+///
+/// One answer serves both surfaces: the profile renders it in full, the
+/// Intro Card renders it short. Deliberately NOT two separate fields —
+/// nobody fills in two versions of the same thing, and the second stays empty.
+model UserPrompt {
+  id        String   @id @default(cuid())
+  userId    String
+  label     String   @db.VarChar(40)
+  answer    String   @db.VarChar(150)
+  /// 0,1,2 — display order, and which ones the card prefers when short on space.
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, position])
+  @@index([userId])
 }
 
 model UserPrivacy {
