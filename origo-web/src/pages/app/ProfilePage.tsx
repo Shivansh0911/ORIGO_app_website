@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Edit, Star, Settings, Heart, GraduationCap } from 'lucide-react';
+import { Edit, Settings, Heart, GraduationCap } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import Avatar from '../../components/ui/Avatar';
 
@@ -32,9 +32,6 @@ export default function ProfilePage() {
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-xl font-bold text-text-primary">{user.name}</h2>
               {user.isVerified && <span className="text-primary font-bold">✓</span>}
-              {user.isPremium && (
-                <span className="text-xs bg-primary/20 text-primary border border-primary/30 px-2 py-0.5 rounded-full">✨ Premium</span>
-              )}
             </div>
             <p className="text-text-muted text-sm">@{user.username}</p>
             {user.collegeName && (
@@ -52,19 +49,15 @@ export default function ProfilePage() {
           </p>
         )}
 
-        {/* Action buttons */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Action buttons — Premium/Boost intentionally not linked here.
+            Payments are out of scope for this launch (CLAUDE.md); the route
+            still exists, it's just not promoted from the primary profile. */}
+        <div className="grid grid-cols-1 gap-3">
           <Link
             to="/app/profile/edit"
             className="flex items-center justify-center gap-2 py-3 bg-card border border-border rounded-xl text-text-secondary hover:border-primary/40 hover:text-primary transition-all text-sm font-medium"
           >
             <Edit size={16} /> Edit Profile
-          </Link>
-          <Link
-            to="/app/premium"
-            className="flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary-light rounded-xl text-white transition-colors text-sm font-medium"
-          >
-            <Star size={16} /> {user.isPremium ? 'Premium ✓' : 'Go Premium'}
           </Link>
         </div>
 
@@ -75,6 +68,32 @@ export default function ProfilePage() {
         >
           <Heart size={16} /> Ship a Friend — free now!
         </Link>
+
+        {/* Prompts */}
+        {user.prompts && user.prompts.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-text-muted uppercase tracking-wider">Your prompts</p>
+              <Link to="/app/intro-card" className="text-xs text-primary hover:underline">Edit</Link>
+            </div>
+            <div className="flex flex-col gap-2">
+              {user.prompts.map((p) => (
+                <div key={p.id} className="bg-muted rounded-xl p-4 border border-border">
+                  <p className="text-xs text-text-muted uppercase tracking-wide">{p.label}</p>
+                  <p className="text-text-primary text-sm italic mt-1">"{p.answer}"</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {(!user.prompts || user.prompts.length === 0) && (
+          <Link
+            to="/app/intro-card"
+            className="block text-center py-3 border border-dashed border-border rounded-xl text-sm text-text-muted hover:border-primary/40 hover:text-primary transition-colors"
+          >
+            + Add prompts — helps people know what to say to you
+          </Link>
+        )}
 
         {/* Looking For */}
         {user.lookingFor?.length > 0 && (
