@@ -33,15 +33,21 @@ export const CARD_THEMES: CardTheme[] = [
   { id: 'candy', label: 'Candy', stops: ['#F472B6', '#A78BFA', '#60A5FA'], ink: '#FFFFFF' },
 ];
 
+/** A prompt as rendered on the card — same data as the profile, shown shorter. */
+export interface CardPrompt {
+  label: string;
+  answer: string;
+}
+
 export interface IntroCardData {
   name: string;
   username: string;
   college: string;
-  branchYear: string;   // e.g. "B.E. CSE · Batch of '30"
+  branchYear: string;   // e.g. "CSE · Batch of 2026"
   hometown: string;
   interests: string[];   // labels, up to 5 shown
-  promptLabel: string;   // e.g. "Hot take"
-  promptAnswer: string;
+  /** Up to 3; story fits 3, square fits 2. Long answers are trimmed to fit. */
+  prompts: CardPrompt[];
   avatarUrl?: string | null;
   profileUrl: string;    // encoded into the QR + printed
   format: CardFormat;
@@ -158,8 +164,10 @@ export async function renderIntroCard(data: IntroCardData): Promise<{ canvas: HT
   // Abstract swoosh flourish (the card's one bold graphic accent, echoing the
   // signature-swash look of a premium card design) — kept low-opacity and
   // tucked in the top-right negative space so it never fights the text.
+  // Kept very low-opacity: at higher values the hard edge reads as a rendering
+  // artifact rather than an intentional flourish.
   ctx.save();
-  ctx.globalAlpha = 0.14;
+  ctx.globalAlpha = 0.05;
   ctx.fillStyle = '#1A1A2E';
   ctx.beginPath();
   ctx.moveTo(w * 0.62, -h * 0.02);
@@ -192,7 +200,7 @@ export async function renderIntroCard(data: IntroCardData): Promise<{ canvas: HT
   const contentLimit = qrY - px(46);
 
   // Avatar
-  const avatarSize = story ? 300 : 164;
+  const avatarSize = story ? 340 : 150;
   const avatarX = pad;
   const avatarY = story ? 230 : 150;
   const img = data.avatarUrl ? await loadImage(data.avatarUrl) : null;
@@ -226,33 +234,40 @@ export async function renderIntroCard(data: IntroCardData): Promise<{ canvas: HT
   ctx.stroke();
 
   // Name + handle + meta block (below avatar)
-  let y = avatarY + avatarSize + (story ? 84 : px(56));
+  // Gap must clear the name's ascender — fillText draws from the baseline, so
+  // too small a gap silently overlaps the avatar above it.
+  let y = avatarY + avatarSize + (story ? 84 : px(112));
   ctx.fillStyle = ink;
-  ctx.font = `700 ${px(76)}px ${fontFamily}`;
+  ctx.font = `700 ${px(92)}px ${fontFamily}`;
   for (const line of wrapLines(ctx, data.name, w - pad * 2, 2)) {
     ctx.fillText(line, pad, y);
-    y += px(84);
+    y += px(100);
   }
 
   ctx.fillStyle = subInk;
   ctx.font = `500 ${px(38)}px ${fontFamily}`;
   ctx.fillText(`@${data.username}`, pad, y);
-  y += px(60);
+  y += px(64);
 
+  // Meta collapsed onto one line — three stacked micro-lines read as a form.
   ctx.fillStyle = ink;
-  ctx.font = `600 ${px(40)}px ${fontFamily}`;
-  for (const line of wrapLines(ctx, data.college, w - pad * 2, 1)) { ctx.fillText(line, pad, y); y += px(52); }
-  ctx.fillStyle = subInk;
-  ctx.font = `400 ${px(34)}px ${fontFamily}`;
-  if (data.branchYear) { ctx.fillText(data.branchYear, pad, y); y += px(46); }
-  if (data.hometown) { ctx.fillText(`📍 ${data.hometown}`, pad, y); y += px(46); }
+  ctx.font = `600 ${px(38)}px ${fontFamily}`;
+  for (const line of wrapLines(ctx, data.college, w - pad * 2, 1)) { ctx.fillText(line, pad, y); y += px(50); }
+  const metaBits = [data.branchYear, data.hometown ? `📍 ${data.hometown}` : ''].filter(Boolean);
+  if (metaBits.length) {
+    ctx.fillStyle = subInk;
+    ctx.font = `400 ${px(34)}px ${fontFamily}`;
+    for (const line of wrapLines(ctx, metaBits.join('  ·  '), w - pad * 2, 1)) { ctx.fillText(line, pad, y); y += px(48); }
+  }
 
   // Interest chips — stop adding rows once they'd collide with the footer.
   y += px(30);
   ctx.font = `500 ${px(32)}px ${fontFamily}`;
   let chipX = pad;
   const chipH = px(62), chipGap = px(16), chipPadX = px(28);
-  for (const label of data.interests.slice(0, 6)) {
+  // Square is vertically tight — cap chips to one row so the prompts, which
+  // are the better content, still get their space.
+  for (const label of data.interests.slice(0, story ? 6 : 3)) {
     const cw = ctx.measureText(label).width + chipPadX * 2;
     if (chipX + cw > w - pad) {
       if (y + chipH + chipGap > contentLimit) break;
@@ -268,28 +283,63 @@ export async function renderIntroCard(data: IntroCardData): Promise<{ canvas: HT
   }
   y += chipH + px(34);
 
-  // Prompt / icebreaker card — fitted to whatever vertical room is left above
-  // the footer, and skipped entirely if there isn't enough for a single line.
+  // Prompt cards — the part people actually read, so they get the space and
+  // the weight. Each is its own panel so three answers scan as three distinct
+  // thoughts rather than a paragraph. Shortest-first, so the most card-friendly
+  // answers win the room when not all of them fit.
+  const boxX = pad, boxW = w - pad * 2;
+  // Chrome kept tight on purpose: generous padding looks better on one card
+  // but costs a whole prompt slot, and three thoughts beat one roomy one.
   const lineH = px(50);
-  const boxChrome = px(36) + px(38) + px(30); // top pad + label row + bottom pad
-  if (data.promptAnswer && contentLimit - y > boxChrome + lineH) {
-    const boxX = pad, boxW = w - pad * 2;
-    ctx.font = `italic 400 ${px(38)}px ${fontFamily}`;
+  const boxPadTop = px(28), boxPadBottom = px(26), labelGap = px(38);
+  const boxChrome = boxPadTop + labelGap + boxPadBottom;
+  const gap = px(20);
+
+  const ordered = [...data.prompts]
+    .filter((p) => p.answer.trim())
+    .sort((a, b) => a.answer.length - b.answer.length)
+    .slice(0, story ? 3 : 2);
+
+  // Distribute leftover vertical room *before* the prompts rather than leaving
+  // a dead gap above the footer — a story card that stops two-thirds down
+  // reads as unfinished, which is fatal for something meant to be posted.
+  if (ordered.length > 0) {
+    ctx.font = `italic 500 ${px(44)}px ${fontFamily}`;
+    const projected = ordered.reduce((sum, p) => {
+      const lines = wrapLines(ctx, p.answer, boxW - px(72), 2);
+      return sum + boxChrome + lines.length * lineH + gap;
+    }, 0);
+    const slack = contentLimit - y - projected;
+    if (slack > 0) y += Math.min(slack * 0.6, px(60));
+  }
+
+  for (const prompt of ordered) {
+    if (contentLimit - y < boxChrome + lineH) break;
+
+    ctx.font = `italic 500 ${px(44)}px ${fontFamily}`;
+    // Square only has room for one prompt, so let that one breathe across more
+    // lines — a single short box floating above a large gap looks unfinished.
     const roomForLines = Math.floor((contentLimit - y - boxChrome) / lineH);
-    const maxLines = Math.max(1, Math.min(story ? 4 : 3, roomForLines));
-    const answerLines = wrapLines(ctx, `“${data.promptAnswer}”`, boxW - px(64), maxLines);
+    const maxLines = Math.max(1, Math.min(story ? 2 : 3, roomForLines));
+    const answerLines = wrapLines(ctx, prompt.answer, boxW - px(72), maxLines);
     const boxH = boxChrome + answerLines.length * lineH;
+
     ctx.fillStyle = chipBg;
-    roundRect(ctx, boxX, y, boxW, boxH, px(32));
+    roundRect(ctx, boxX, y, boxW, boxH, px(30));
     ctx.fill();
-    let ty = y + px(56);
+
+    let ty = y + boxPadTop + px(18);
     ctx.fillStyle = subInk;
-    ctx.font = `600 ${px(28)}px ${fontFamily}`;
-    ctx.fillText(data.promptLabel.toUpperCase(), boxX + px(32), ty);
-    ty += px(46);
+    ctx.font = `600 ${px(26)}px ${fontFamily}`;
+    ctx.letterSpacing = `${px(2)}px`;
+    ctx.fillText(prompt.label.toUpperCase(), boxX + px(36), ty);
+    ctx.letterSpacing = '0px';
+    ty += labelGap;
     ctx.fillStyle = ink;
-    ctx.font = `italic 400 ${px(38)}px ${fontFamily}`;
-    for (const line of answerLines) { ctx.fillText(line, boxX + px(32), ty); ty += lineH; }
+    ctx.font = `italic 500 ${px(44)}px ${fontFamily}`;
+    for (const line of answerLines) { ctx.fillText(line, boxX + px(36), ty); ty += lineH; }
+
+    y += boxH + gap;
   }
 
   // Footer: QR + "Made with Origo"

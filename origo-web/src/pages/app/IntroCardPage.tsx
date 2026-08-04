@@ -26,8 +26,12 @@ export default function IntroCardPage() {
   const [hometown, setHometown] = useState(() => user?.hometown ?? '');
   const branchYear = [branch, user?.joiningYear ? `Batch of ${user.joiningYear}` : null]
     .filter(Boolean).join(' · ');
-  const [promptLabel, setPromptLabel] = useState(ICEBREAKER_PROMPTS[0]!.label);
-  const [promptAnswer, setPromptAnswer] = useState('');
+  // Up to 3 prompts, shared with the profile — the card renders them short,
+  // the profile renders them in full. One set of answers, two presentations.
+  const [prompts, setPrompts] = useState<{ label: string; answer: string }[]>(
+    () => (user?.prompts ?? []).map((p) => ({ label: p.label, answer: p.answer })),
+  );
+  const [editingSlot, setEditingSlot] = useState<number | null>(prompts.length === 0 ? 0 : null);
   const [format, setFormat] = useState<CardFormat>('story');
   const [theme, setTheme] = useState<CardTheme>(CARD_THEMES[0]);
 
@@ -52,14 +56,13 @@ export default function IntroCardPage() {
       branchYear,
       hometown,
       interests,
-      promptLabel,
-      promptAnswer,
+      prompts,
       avatarUrl: user.avatarUrl,
       profileUrl,
       format,
       theme,
     };
-  }, [user, branchYear, hometown, interests, promptLabel, promptAnswer, profileUrl, format, theme]);
+  }, [user, branchYear, hometown, interests, prompts, profileUrl, format, theme]);
 
   // Persist branch/hometown to the profile once they settle — these were
   // previously collected here and thrown away (local state only), despite
@@ -75,6 +78,22 @@ export default function IntroCardPage() {
     }, 800);
     return () => clearTimeout(t);
   }, [user, branch, hometown]);
+
+  // Persist prompts (debounced). These feed the profile too — the card is just
+  // where most people will first write them.
+  useEffect(() => {
+    if (!user) return;
+    const filled = prompts.filter((p) => p.answer.trim());
+    const existing = (user.prompts ?? []).map((p) => `${p.label}|${p.answer}`).join('~');
+    const next = filled.map((p) => `${p.label}|${p.answer}`).join('~');
+    if (existing === next) return;
+    const t = setTimeout(() => {
+      usersApi.updatePrompts(filled).catch(() => {
+        // Best-effort; the card renders from local state regardless.
+      });
+    }, 900);
+    return () => clearTimeout(t);
+  }, [user, prompts]);
 
   // Re-render the card (debounced) whenever inputs change.
   useEffect(() => {
@@ -232,45 +251,130 @@ export default function IntroCardPage() {
           </label>
 
           <div>
-            <p className="text-sm text-text-secondary font-medium mb-2">Icebreaker prompt</p>
-            <div className="flex gap-2 flex-wrap mb-2">
-              {ICEBREAKER_PROMPTS.map((p) => (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => { setPromptLabel(p.label); setPromptAnswer(''); }}
-                  className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                    promptLabel === p.label ? 'bg-primary text-white border-primary' : 'border-border text-text-secondary hover:border-primary/50'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
+            <div className="flex items-baseline justify-between mb-2">
+              <p className="text-sm text-text-secondary font-medium">Your prompts</p>
+              <p className="text-xs text-text-muted">{prompts.filter((p) => p.answer.trim()).length}/3 · also shown on your profile</p>
             </div>
 
-            {/* Tappable suggested answers — never a blank page. Still fully
-                editable after tapping; these are starting points, not a form. */}
-            <div className="flex flex-col gap-1.5 mb-2">
-              {(ICEBREAKER_PROMPTS.find((p) => p.label === promptLabel)?.suggestions ?? []).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setPromptAnswer(s)}
-                  className="text-left text-sm px-3 py-2 rounded-xl border border-border text-text-secondary hover:border-primary/50 hover:text-text-primary transition-colors"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
+            <div className="flex flex-col gap-2">
+              {[0, 1, 2].map((slot) => {
+                const current = prompts[slot];
+                const isEditing = editingSlot === slot;
+                const preset = ICEBREAKER_PROMPTS.find((p) => p.label === current?.label);
 
-            <textarea
-              value={promptAnswer}
-              onChange={(e) => setPromptAnswer(e.target.value.slice(0, 140))}
-              placeholder="Tap a suggestion above, or write your own"
-              rows={3}
-              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition-colors resize-none"
-            />
-            <p className="text-xs text-text-muted text-right mt-1">{promptAnswer.length}/140</p>
+                if (!isEditing) {
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => setEditingSlot(slot)}
+                      className="text-left px-4 py-3 rounded-xl border border-border hover:border-primary/50 transition-colors"
+                    >
+                      {current?.answer ? (
+                        <>
+                          <p className="text-[11px] uppercase tracking-wide text-text-muted">{current.label}</p>
+                          <p className="text-sm text-text-primary mt-0.5">{current.answer}</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-text-muted">+ Add a prompt</p>
+                      )}
+                    </button>
+                  );
+                }
+
+                return (
+                  <div key={slot} className="rounded-xl border border-primary/40 p-3 flex flex-col gap-2">
+                    <div className="flex gap-1.5 flex-wrap">
+                      {ICEBREAKER_PROMPTS.map((p) => (
+                        <button
+                          key={p.label}
+                          type="button"
+                          onClick={() => setPrompts((prev) => {
+                            const next = [...prev];
+                            next[slot] = { label: p.label, answer: '' };
+                            return next;
+                          })}
+                          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                            current?.label === p.label
+                              ? 'bg-primary text-white border-primary'
+                              : 'border-border text-text-secondary hover:border-primary/50'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Tappable suggestions — never a blank page. Fully editable
+                        after tapping; these are starting points, not a form. */}
+                    {preset && (
+                      <div className="flex flex-col gap-1.5">
+                        {preset.suggestions.map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setPrompts((prev) => {
+                              const next = [...prev];
+                              next[slot] = { label: preset.label, answer: s };
+                              return next;
+                            })}
+                            className="text-left text-sm px-3 py-2 rounded-lg border border-border text-text-secondary hover:border-primary/50 hover:text-text-primary transition-colors"
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {current?.label && (
+                      <>
+                        <textarea
+                          value={current.answer}
+                          onChange={(e) => setPrompts((prev) => {
+                            const next = [...prev];
+                            next[slot] = { label: current.label, answer: e.target.value.slice(0, 150) };
+                            return next;
+                          })}
+                          placeholder="Tap a suggestion, or write your own"
+                          rows={2}
+                          className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-primary transition-colors resize-none"
+                        />
+                        <div className="flex items-center justify-between">
+                          {/* Soft guidance, not a hard cap — longer answers still
+                              work on the profile, the card just trims them. */}
+                          <span className={`text-xs ${current.answer.length <= 70 ? 'text-green' : 'text-text-muted'}`}>
+                            {current.answer.length <= 70 ? '✓ fits your card' : 'shown in full on your profile'}
+                          </span>
+                          <span className="text-xs text-text-muted">{current.answer.length}/150</span>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditingSlot(null)}
+                        className="flex-1 text-sm py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary-light transition-colors"
+                      >
+                        Done
+                      </button>
+                      {current && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPrompts((prev) => prev.filter((_, i) => i !== slot));
+                            setEditingSlot(null);
+                          }}
+                          className="px-3 text-sm text-text-muted hover:text-text-secondary transition-colors"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {interests.length === 0 && (

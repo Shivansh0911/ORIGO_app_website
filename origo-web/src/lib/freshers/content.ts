@@ -79,49 +79,64 @@ export const ICEBREAKER_PROMPTS: IcebreakerPrompt[] = [
   {
     label: 'Hot take',
     suggestions: [
-      'Pineapple absolutely belongs on pizza.',
-      'The mess food is actually underrated.',
-      'Morning classes should not exist.',
+      'Pineapple belongs on pizza. Fight me.',
+      'Mess food is underrated and you all know it',
+      '8am classes are a human rights violation',
     ],
   },
   {
-    label: "You'll find me…",
+    label: "You'll find me",
     suggestions: [
-      'At the canteen, always',
-      'In the library at 2am before deadlines',
-      'Wherever there\'s free food',
-    ],
-  },
-  {
-    label: 'Two truths, one lie',
-    suggestions: [
-      "I've never left my home state before this.",
-      "I can't swim but I signed up for the swim club.",
-      "I once talked to a celebrity and didn't realise it.",
-    ],
-  },
-  {
-    label: 'My campus goal this year',
-    suggestions: [
-      'Join a club I know nothing about',
-      'Actually go to the gym I signed up for',
-      'Find my people before the semester ends',
-    ],
-  },
-  {
-    label: 'Looking for someone to…',
-    suggestions: [
-      'Explore the city with on weekends',
-      'Cram for exams with at 3am',
-      'Split a Swiggy order with',
+      'At the canteen. Always.',
+      'In the library at 2am, panicking',
+      'Wherever there is free food',
     ],
   },
   {
     label: 'Ask me about',
     suggestions: [
-      'My hometown — I will not shut up about it',
-      'The weirdest hobby I have',
-      'Why I chose this branch',
+      'My hometown — I will not shut up',
+      'The most useless skill I have',
+      'Why I actually picked this branch',
+    ],
+  },
+  {
+    label: 'Looking for someone to',
+    suggestions: [
+      'Explore the city with on weekends',
+      'Panic about deadlines with at 3am',
+      'Split a Swiggy order with',
+    ],
+  },
+  {
+    label: 'Two truths and a lie',
+    suggestions: [
+      'Never left my state before this. Can drive. Scared of pigeons.',
+      'I can cook, I can swim, I can wake up before 9',
+    ],
+  },
+  {
+    label: 'My most controversial opinion',
+    suggestions: [
+      'Filter coffee > everything',
+      'Group projects should be illegal',
+      'The north campus canteen is better and I can prove it',
+    ],
+  },
+  {
+    label: 'This year I want to',
+    suggestions: [
+      'Join a club I know nothing about',
+      'Actually use the gym I signed up for',
+      'Find my people before semester ends',
+    ],
+  },
+  {
+    label: 'Green flag I look for',
+    suggestions: [
+      'Replies to texts like a functioning adult',
+      'Will try the weird item on the menu',
+      'Has strong opinions about something harmless',
     ],
   },
 ];

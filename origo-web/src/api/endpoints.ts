@@ -3,7 +3,7 @@ import type {
   User, PublicUser, Interest, RizzSession, RizzMessage,
   Conversation, Message, Community, Post, Comment,
   CommunityEvent, Notification, Ship, LoginResponse,
-  Pulse, PulseResponse, PulseCategory, UserPrivacy,
+  Pulse, PulseResponse, PulseCategory, UserPrivacy, UserPrompt,
 } from '../types';
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
@@ -40,6 +40,10 @@ export const usersApi = {
 
   updatePrivacy: (body: Partial<UserPrivacy>) =>
     api.patch<UserPrivacy>('/users/me/privacy', body),
+
+  /** Replaces all prompt answers at once — position comes from array order. */
+  updatePrompts: (prompts: { label: string; answer: string }[]) =>
+    api.put<UserPrompt[]>('/users/me/prompts', { prompts }),
 
   uploadAvatar: (file: File) => {
     const fd = new FormData();

@@ -18,6 +18,15 @@ export interface User {
   branch: string | null;
   hometown: string | null;
   privacy?: UserPrivacy;
+  prompts?: UserPrompt[];
+}
+
+/** A prompt answer on a profile — fixed label, free-text answer. */
+export interface UserPrompt {
+  id: string;
+  label: string;
+  answer: string;
+  position: number;
 }
 
 export interface UserPrivacy {
@@ -44,6 +53,7 @@ export interface PublicUser {
   interests: UserInterest[];
   lastSeen: string | null;
   compatibilityScore?: number;
+  prompts?: UserPrompt[];
   /** Community memberships — present only on /discover candidates (BLOCK-3 fix). */
   communities?: { id: string; memberCount: number; category: string }[];
   /** Recency-based responsiveness proxy 0..1 — present only on /discover candidates. */
