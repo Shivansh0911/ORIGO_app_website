@@ -23,7 +23,6 @@ export interface Quest {
 export const QUESTS: Quest[] = [
   { id: 'profile', title: 'Complete your profile', description: 'Add a photo, bio and 3+ interests so people can find you.', emoji: '🪪', points: 20, to: '/app/profile/edit' },
   { id: 'intro-card', title: 'Create your Intro Card', description: 'Generate a shareable card and post it before you arrive.', emoji: '🎴', points: 25, to: '/app/intro-card' },
-  { id: 'batch', title: 'Join your Batch space', description: 'Meet your incoming batch before day one.', emoji: '🎓', points: 15, to: '/app/batch' },
   { id: 'communities', title: 'Join 3 communities', description: 'Find your people around shared interests and clubs.', emoji: '🏘️', points: 15, to: '/app/communities' },
   { id: 'senior', title: 'Ask a senior', description: 'Get the inside scoop from someone who’s been there.', emoji: '🧭', points: 10, to: '/app/seniors' },
   { id: 'connect', title: 'Make your first connection', description: 'Start a Rizz In 5 or match with someone new.', emoji: '⚡', points: 15, to: '/app/discover' },
@@ -52,18 +51,9 @@ export const SENIORS: Senior[] = [
   { id: 's3', name: 'Sneha P.', year: '2nd year', branch: 'ECE', avatarColor: '#10B981', topics: ['Academics', 'Societies', 'Settling in'], blurb: 'Was exactly where you are last year. Ask me anything, no question too small.' },
 ];
 
-/** GET /v1/batch/:campus/:year — batch space header stats. */
-export const BATCH_INFO = {
-  name: "Batch of '30",
-  members: 512,
-  cities: 47,
-  threads: [
-    { id: 't1', emoji: '🏙️', title: 'Who else is from Delhi NCR?', replies: 38 },
-    { id: 't2', emoji: '🛏️', title: 'Roommate vibes check — night owls?', replies: 61 },
-    { id: 't3', emoji: '🎒', title: 'What do I actually need to pack?', replies: 44 },
-    { id: 't4', emoji: '🎓', title: 'Ask a senior: which mess is best?', replies: 27 },
-  ],
-};
+// Batch Space is cut (decisions/0003 + BUILD_PLAN.md 1.1) — it competed
+// directly with the batch WhatsApp group every fresher is already in. What
+// WhatsApp can't do (structured discovery) folds into Discover instead.
 
 /** Prom Radar config. POST /v1/prom/opt-in, GET /v1/prom/status. */
 export const PROM_INFO = {

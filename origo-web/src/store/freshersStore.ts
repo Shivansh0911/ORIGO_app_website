@@ -23,7 +23,6 @@ export interface MetPerson {
 
 interface FreshersState {
   completedQuests: string[];
-  batchJoined: boolean;
 
   promOptIn: boolean;
   promMode: PromMode;
@@ -32,7 +31,6 @@ interface FreshersState {
   met: MetPerson[];
 
   completeQuest: (id: string) => void;
-  joinBatch: () => void;
   setProm: (opts: { optIn?: boolean; mode?: PromMode; note?: string }) => void;
   addMet: (p: MetPerson) => void;
   removeMet: (id: string) => void;
@@ -42,7 +40,6 @@ export const useFreshersStore = create<FreshersState>()(
   persist(
     (set) => ({
       completedQuests: [],
-      batchJoined: false,
       promOptIn: false,
       promMode: 'GROUP',
       promNote: '',
@@ -50,11 +47,6 @@ export const useFreshersStore = create<FreshersState>()(
 
       completeQuest: (id) =>
         set((s) => (s.completedQuests.includes(id) ? s : { completedQuests: [...s.completedQuests, id] })),
-
-      joinBatch: () => set((s) => ({
-        batchJoined: true,
-        completedQuests: s.completedQuests.includes('batch') ? s.completedQuests : [...s.completedQuests, 'batch'],
-      })),
 
       setProm: (opts) => set((s) => ({
         promOptIn: opts.optIn ?? s.promOptIn,
