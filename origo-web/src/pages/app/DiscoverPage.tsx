@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, X, Zap, GraduationCap, Sparkles, ChevronDown } from 'lucide-react';
@@ -92,8 +93,9 @@ function WhyThisMatch({ user }: { user: ScoredUser }) {
   );
 }
 
-function ProfileCard({ user, onLike, onPass, onRizz }: {
+function ProfileCard({ user, onLike, onPass, onRizz, onReact }: {
   user: ScoredUser; onLike: () => void; onPass: () => void; onRizz: () => void;
+  onReact: (prompt: { label: string; answer: string }) => void;
 }) {
   return (
     <motion.div
@@ -153,6 +155,27 @@ function ProfileCard({ user, onLike, onPass, onRizz }: {
           </div>
         )}
 
+        {/* Prompts, each reactable — this is what kills the "hey" opener. Tapping
+            one starts a Rizz session with the opener already quoting what they
+            wrote, so the first message is never a blank page. */}
+        {user.prompts && user.prompts.length > 0 && (
+          <div className="flex flex-col gap-2 mb-3">
+            {user.prompts.slice(0, 3).map((p) => (
+              <button
+                key={p.id}
+                onClick={() => onReact(p)}
+                className="text-left px-3 py-2.5 rounded-xl bg-muted hover:bg-primary/10 border border-border hover:border-primary/30 transition-colors group"
+              >
+                <p className="text-[10px] uppercase tracking-wide text-text-muted">{p.label}</p>
+                <div className="flex items-center justify-between gap-2 mt-0.5">
+                  <p className="text-sm text-text-primary italic">"{p.answer}"</p>
+                  <Zap size={14} className="shrink-0 text-text-muted group-hover:text-primary transition-colors" />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
         <WhyThisMatch user={user} />
 
         <div className="flex gap-3">
@@ -183,6 +206,7 @@ function ProfileCard({ user, onLike, onPass, onRizz }: {
 
 export default function DiscoverPage() {
   const user = useAuthStore((s) => s.user);
+  const navigate = useNavigate();
   const [intent, setIntent] = useState<Intent>(() => {
     const derived = primaryIntent(user?.lookingFor ?? []);
     // Guard against a DATING-only lookingFor selecting a chip we don't render.
@@ -279,6 +303,22 @@ export default function DiscoverPage() {
     advance();
   };
 
+  // Reacting to a prompt starts a Rizz session and jumps straight into the
+  // chat with the opener already quoting what they wrote — the whole point
+  // being that "hey" is no longer possible. The draft is left editable
+  // (not auto-sent) so it's still the user's own message.
+  const handleReact = async (prompt: { label: string; answer: string }) => {
+    if (!current) return;
+    track('discover_rizz_start', { candidateId: current.id, intent, score: current.compatibilityScore, viaPrompt: true });
+    try {
+      const { data: session } = await rizzApi.startSession(current.id);
+      advance();
+      navigate(`/app/rizz/${session.id}`, { state: { draft: `"${prompt.answer}" — ` } });
+    } catch {
+      toast.error('Could not start Rizz session');
+    }
+  };
+
   if (isLoading) return (
     <div className="p-4 max-w-sm mx-auto"><DiscoverSkeleton /></div>
   );
@@ -324,7 +364,7 @@ export default function DiscoverPage() {
       <div className="flex-1 flex items-start justify-center pt-4 md:pt-8 px-4">
         <AnimatePresence mode="wait">
           {current ? (
-            <ProfileCard key={current.id} user={current} onLike={handleLike} onPass={handlePass} onRizz={handleRizz} />
+            <ProfileCard key={current.id} user={current} onLike={handleLike} onPass={handlePass} onRizz={handleRizz} onReact={handleReact} />
           ) : (
             <EmptyState
               icon="🧭"

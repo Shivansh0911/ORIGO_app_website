@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Send, Lightbulb } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -11,36 +11,42 @@ import Avatar from '../../components/ui/Avatar';
 import Spinner from '../../components/ui/Spinner';
 import type { RizzMessage } from '../../types';
 
+// MATCH_MAX_CONSECUTIVE on the backend (config/matching.ts) — the session
+// flips to WAITING the moment count reaches this, so while status is ACTIVE,
+// count is always 0 or 1. Kept in sync by hand since the frontend has no
+// reason to fetch backend config for one number.
+const MAX_CONSECUTIVE = 2;
+
 function RizzBar({ count, status }: { count: number; status: string }) {
-  const isFinalShot = count === 4 && status === 'ACTIVE';
+  const remaining = Math.max(0, MAX_CONSECUTIVE - count);
   const labels: Record<string, string> = {
-    ACTIVE: count >= 5 ? 'Waiting for reply…' : isFinalShot ? '🔥 Final shot!' : `${5 - count} messages left`,
+    ACTIVE: remaining === 1
+      ? 'Last one before you wait for a reply'
+      : `${remaining} messages, then you wait for a reply`,
     WAITING: 'Waiting for them to reply',
     ACCEPTED: 'Chat unlocked! 🎉',
-    DECLINED: 'Session declined',
+    // DECLINED is only ever visible to the target — the backend masks it to
+    // EXPIRED on the initiator's own view (maskDeclineForInitiator), since a
+    // campus rejection has a face and a timetable. Keep the copy distinct:
+    // the target should see their own action reflected accurately.
+    DECLINED: 'You declined this',
     EXPIRED: 'Session expired',
   };
+  const isLastShot = status === 'ACTIVE' && remaining === 1;
   return (
     <div className="bg-muted border-b border-border px-4 py-2.5 flex items-center justify-between">
       <div className="flex gap-1.5">
         {Array.from({ length: 5 }).map((_, i) => {
           const filled = i < count;
-          const isLast = i === 4;
           return (
             <div
               key={i}
-              className={`h-2 w-8 rounded-full transition-all ${
-                filled
-                  ? i >= 3 ? 'bg-amber-400' : 'bg-primary'
-                  : isLast && isFinalShot
-                  ? 'bg-red-400 animate-pulse'
-                  : 'bg-border'
-              }`}
+              className={`h-2 w-8 rounded-full transition-all ${filled ? 'bg-primary' : 'bg-border'}`}
             />
           );
         })}
       </div>
-      <p className={`text-xs font-medium ${isFinalShot ? 'text-red-500' : 'text-text-secondary'}`}>
+      <p className={`text-xs font-medium ${isLastShot ? 'text-amber-600' : 'text-text-secondary'}`}>
         {labels[status] ?? ''}
       </p>
     </div>
@@ -49,7 +55,11 @@ function RizzBar({ count, status }: { count: number; status: string }) {
 
 export default function RizzChatPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const [input, setInput] = useState('');
+  const location = useLocation();
+  // Seeded from Discover when the initiator reacted to a prompt instead of
+  // starting cold — see DiscoverPage.handleReact. Left editable, never sent
+  // automatically; the point is killing the blank page, not the user's voice.
+  const [input, setInput] = useState(() => (location.state as { draft?: string } | null)?.draft ?? '');
   const [icebreaker, setIcebreaker] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { user } = useAuthStore();

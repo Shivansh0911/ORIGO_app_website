@@ -80,6 +80,7 @@ export const DiscoverService = {
       where,
       include: {
         interests: { include: { interest: true } },
+        prompts: { orderBy: { position: 'asc' } },
         privacy: true,
         communityMemberships: {
           include: { community: { select: { id: true, memberCount: true, interest: { select: { category: true } } } } },
@@ -97,6 +98,7 @@ export const DiscoverService = {
         where,
         include: {
           interests: { include: { interest: true } },
+          prompts: { orderBy: { position: 'asc' } },
           privacy: true,
           communityMemberships: {
             include: { community: { select: { id: true, memberCount: true, interest: { select: { category: true } } } } },
@@ -134,7 +136,7 @@ export const DiscoverService = {
       );
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { passwordHash, dateOfBirth, phone, collegeEmail, firebaseUid, pushToken, communityMemberships, privacy, ...safe } = u;
+      const { passwordHash, dateOfBirth, phone, collegeEmail, collegeEmailHash, firebaseUid, pushToken, communityMemberships, privacy, ...safe } = u;
 
       const communities = communityMemberships.map((m) => ({
         id: m.communityId,
