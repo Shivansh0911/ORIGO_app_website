@@ -5,9 +5,22 @@ generator client {
   provider = "prisma-client-js"
 }
 
+/// Supabase's *direct* database host (db.<ref>.supabase.co) resolves to an
+/// IPv6 address only, which is unreachable from many Indian ISP / campus
+/// networks — this blocked deployment entirely. The connection pooler
+/// (aws-0-<region>.pooler.supabase.com) has IPv4 addresses and does not.
+///
+/// Two URLs because they do different jobs:
+///   url       — port 6543, transaction mode + ?pgbouncer=true. Runtime queries.
+///               Transaction pooling can't do prepared statements.
+///   directUrl — port 5432 on the *same pooler host*, session mode. Migrations
+///               only, which need prepared statements and advisory locks.
+///
+/// Locally both point at the Docker Postgres, so nothing changes for dev.
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
