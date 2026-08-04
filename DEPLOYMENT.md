@@ -1,341 +1,208 @@
-# Origo — Full Deployment Guide
+# Origo — Deployment Guide
 
-End-to-end hosting for backend, website, and Android app.
+> Rewritten 2026-08-05. The previous version described Railway Postgres,
+> Cloudflare R2, and Firebase/FCM — **none of which the code actually uses.**
+> Storage is Supabase Storage via a plain `fetch` wrapper
+> (`backend/src/utils/supabase.ts`), the database is Supabase Postgres, and
+> push notifications aren't built. Following the old doc would have had you
+> setting up two services that do nothing. This version matches the code.
 
----
-
-## Architecture Overview
+For the current launch: **web only** (PWA). The `origo-app/` Expo mobile app
+exists but isn't shipping — out of scope, see `CLAUDE.md` / `docs/BUILD_PLAN.md`.
 
 ```
 Internet
-  │
-  ├── Android App (APK/Google Play)
+  ├── origo-web (Vercel)      — static Vite SPA
   │     └── API calls → backend
-  │
-  ├── origo-web (Vercel)
-  │     └── Static landing site
-  │
-  └── backend (Railway)
-        ├── Node.js + Express API  :4000
-        ├── Socket.io (same server)
-        ├── PostgreSQL (Railway add-on)
-        └── Redis (Upstash, external)
+  └── backend (Railway)       — Node/Express + Socket.IO, port from $PORT
+        ├── Supabase Postgres (via connection pooler — see below)
+        ├── Supabase Storage  (avatars public, student IDs private)
+        ├── Upstash Redis     (sessions, rate limits, OTP)
+        ├── Resend            (OTP email — fallback only; Google Workspace
+        │                      auto-verifies BITS students, see auth.service.ts)
+        └── Google OAuth      (primary verification path)
 ```
+
+Razorpay, Firebase/FCM, AWS/R2 are **not required** — Premium/Boost/payments
+are out of scope for this launch (see `CLAUDE.md`), and storage/push don't
+use them regardless of launch scope. Don't set `RAZORPAY_KEY_*` — pseudo-mode
+is the intended state (`docs/decisions/0002`).
 
 ---
 
-## STEP 1 — Third-Party Services Setup
+## STEP 1 — Supabase (database + storage)
 
-Do these first — you need their keys before deploying anything.
+You already have a project (`kxpqldbwptwcueusohqh`). Two things to get right,
+both because of one fact: **the direct database host resolves to IPv6 only**
+and is unreachable from most Indian networks. Always use the pooler.
 
-### 1A. Upstash Redis (free tier)
-1. Go to console.upstash.com → Create Database → Region: ap-south-1 (Mumbai)
-2. Copy **REDIS_URL** (format: `rediss://...@...upstash.io:6379`)
+### 1A. Connection strings
 
-### 1B. Resend (email)
-1. resend.com → Create API Key
-2. Add your domain (or use the free sandbox domain for dev)
-3. Copy **RESEND_API_KEY** (`re_...`)
+Supabase dashboard → **Settings → Database → Connection pooling**. You need
+**two** URLs, same host, different port/mode:
 
-### 1C. Razorpay
-1. dashboard.razorpay.com → Settings → API Keys → Generate
-2. Copy **RAZORPAY_KEY_ID** and **RAZORPAY_KEY_SECRET**
-3. For test mode use `rzp_test_...` keys
+```
+DATABASE_URL=postgresql://postgres.kxpqldbwptwcueusohqh:<PASSWORD>@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+DIRECT_URL=postgresql://postgres.kxpqldbwptwcueusohqh:<PASSWORD>@aws-0-ap-south-1.pooler.supabase.com:5432/postgres
+```
 
-### 1D. Cloudflare R2 (media storage — cheaper than S3)
-1. dash.cloudflare.com → R2 → Create Bucket: `origo-media`
-2. Manage API Tokens → Create Token with R2 permissions
-3. Get: **Account ID**, **Access Key ID**, **Secret Access Key**
-4. Bucket public URL: `https://pub-<hash>.r2.dev` or custom domain
+- `DATABASE_URL` — port **6543**, transaction mode, `?pgbouncer=true`. App runtime.
+- `DIRECT_URL` — port **5432**, session mode. Migrations only (transaction
+  pooling can't do prepared statements, which `prisma migrate` needs).
+- Username is `postgres.<PROJECT_REF>` **with the dot** — easy to miss, and
+  omitting it produces an opaque auth failure that looks unrelated.
 
-### 1E. Firebase (push notifications)
-1. console.firebase.google.com → New project → Android app
-2. Package name: `app.origo.android`
-3. Download `google-services.json` → place in `origo-app/`
-4. Project Settings → Service Accounts → Generate private key → JSON
-5. Copy JSON content → **FIREBASE_SERVICE_ACCOUNT_JSON**
+### 1B. Storage buckets
+
+Storage → create two buckets if they don't exist:
+- `origo` — **public** (avatars)
+- `origo-private` — **private** (student ID uploads for manual verification)
+
+### 1C. Run migrations against production
+
+From `backend/`, with the two URLs above set in your shell (or a temporary
+`.env`):
+
+```bash
+npx prisma migrate deploy
+npx prisma db seed
+```
+
+`migrate deploy` uses `DIRECT_URL`; the running app uses `DATABASE_URL`. Both
+must be set or Prisma will use the wrong one for the wrong job.
 
 ---
 
 ## STEP 2 — Backend on Railway
 
-Railway is the easiest production-grade host for Node.js + PostgreSQL.
-
-### 2A. Create project
 ```bash
-# Install Railway CLI
 npm install -g @railway/cli
-
-# Login
-railway login
-
-# From backend/ directory:
+railway login          # opens a browser — this is the step only you can do
 cd backend
-railway init        # creates new Railway project
-railway link        # links to project
+railway init
+railway link
 ```
 
-### 2B. Add PostgreSQL database
-Railway dashboard → your project → + New → Database → PostgreSQL
-- Copy the **DATABASE_URL** from the Variables tab
+### 2A. Environment variables
 
-### 2C. Run Prisma migrations
+Railway dashboard → your service → Variables:
+
+```
+DATABASE_URL            = (from 1A)
+DIRECT_URL               = (from 1A)
+REDIS_URL                = (Upstash — rediss://..., TLS required)
+JWT_SECRET                = (openssl rand -hex 32)
+JWT_REFRESH_SECRET        = (openssl rand -hex 32 — different value)
+FIELD_ENCRYPTION_KEY      = (openssl rand -hex 32 — different again)
+BLIND_INDEX_KEY           = (openssl rand -hex 32 — different again)
+SUPABASE_URL              = https://kxpqldbwptwcueusohqh.supabase.co
+SUPABASE_SERVICE_ROLE_KEY = (Supabase → Settings → API → service_role)
+RESEND_API_KEY             = re_...        (OTP fallback path only)
+GOOGLE_CLIENT_ID           = (must match origo-web's VITE_GOOGLE_CLIENT_ID)
+NODE_ENV                   = production
+PORT                        = 3001
+ALLOWED_ORIGINS            = https://<your-vercel-domain>
+```
+
+`FIELD_ENCRYPTION_KEY` and `BLIND_INDEX_KEY` must be **different** 64-hex-char
+values — the server refuses to boot if either is malformed or missing
+(`server.ts` `checkEnv()`, deliberate — see `CLAUDE.md`).
+
+Do **not** set `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET`. Setting only one (or
+a typo'd pair) will now fail startup by design — see `docs/BUILD_PLAN.md` B9.
+
+### 2B. Deploy
+
 ```bash
-# In backend/, set local DATABASE_URL first:
-export DATABASE_URL="postgresql://..."
-
-npm run db:migrate   # runs: prisma migrate deploy
-npm run db:seed      # seeds interest categories
+railway up
+# or connect GitHub for auto-deploy on push to master:
+# Railway dashboard → Settings → connect ORIGO_app_website → root: backend/
 ```
 
-### 2D. Set environment variables
-Railway dashboard → Variables → Add all of these:
+Build command: `npm install && npx prisma generate`. Start command: `npm start`.
 
-```
-DATABASE_URL           = (from Railway PostgreSQL)
-REDIS_URL              = (from Upstash)
-JWT_SECRET             = (run: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))")
-JWT_REFRESH_SECRET     = (same command, different value)
-FIELD_ENCRYPTION_KEY   = (same command, must be 32 bytes = 64 hex chars)
-RESEND_API_KEY         = re_...
-RAZORPAY_KEY_ID        = rzp_live_...
-RAZORPAY_KEY_SECRET    = ...
-AWS_ACCESS_KEY_ID      = (Cloudflare R2 key)
-AWS_SECRET_ACCESS_KEY  = (Cloudflare R2 secret)
-AWS_S3_BUCKET          = origo-media
-AWS_REGION             = auto
-AWS_ENDPOINT           = https://<account-id>.r2.cloudflarestorage.com
-FIREBASE_SERVICE_ACCOUNT_JSON = {"type":"service_account",...}
-FCM_SERVER_KEY         = ...
-ALLOWED_ORIGINS        = https://origo.app,https://www.origo.app
-NODE_ENV               = production
-PORT                   = 4000
-```
+### 2C. Get your backend URL
 
-### 2E. Deploy
-```bash
-cd backend
-railway up          # deploys current code
-
-# Or connect GitHub for auto-deploy on push:
-# Railway dashboard → Settings → GitHub repo → select ORIGO_app_website → branch: main
-# Build command: npm install && npx prisma generate
-# Start command: npm start
-```
-
-### 2F. Get your backend URL
-Railway dashboard → Settings → Domain → Generate domain
-Example: `https://origo-backend-production.up.railway.app`
-
-Save this as `BACKEND_URL` — you'll need it for the app.
-
-### 2G. Razorpay webhook
-Razorpay dashboard → Webhooks → Add:
-- URL: `https://your-railway-url.railway.app/v1/payments/webhook`
-- Events: `payment.captured`, `subscription.cancelled`, `subscription.halted`
-- Secret: generate one and add to Railway as `RAZORPAY_WEBHOOK_SECRET`
+Railway dashboard → Settings → Domain → Generate domain. You'll need this for
+step 3 and for Google OAuth's authorised-origins list.
 
 ---
 
-## STEP 3 — Website on Vercel
+## STEP 3 — Web app on Vercel
 
-### 3A. Deploy
-1. vercel.com → Import → GitHub → ORIGO_app_website repo
-2. Root Directory: `origo-web`
-3. Framework Preset: Vite
-4. Build command: `npm run build`
-5. Output directory: `dist`
-6. Click Deploy
+1. vercel.com → Import → GitHub → `ORIGO_app_website`
+2. Root directory: `origo-web`
+3. Framework preset: Vite · Build: `npm run build` · Output: `dist`
+4. Environment variables:
+   ```
+   VITE_API_URL          = https://<your-railway-domain>
+   VITE_GOOGLE_CLIENT_ID  = (same client ID as backend's GOOGLE_CLIENT_ID)
+   ```
+5. Deploy.
 
-### 3B. Custom domain
-Vercel dashboard → Domains → Add → `origo.app`
-Add DNS records at your registrar:
-```
-A     @        76.76.21.21
-CNAME www      cname.vercel-dns.com
-```
+### Custom domain (optional, do it if you have one — see CLAUDE.md's note on
+credibility for QR posters)
 
-### 3C. Environment variables (website has none required for MVP)
-The marketing website is fully static — no env vars needed.
+Vercel → Domains → add it, point DNS per Vercel's instructions.
 
 ---
 
-## STEP 4 — Android App with EAS Build
+## STEP 4 — Google OAuth authorised origins
 
-Expo Application Services (EAS) builds a signed APK/AAB for Google Play.
+Google Cloud Console → APIs & Services → Credentials → your OAuth client:
 
-### 4A. Setup EAS
-```bash
-# Install EAS CLI globally
-npm install -g eas-cli
+Add **both**:
+- Your Vercel URL (`https://your-app.vercel.app`)
+- `http://localhost:3000` (keep — local dev still needs it)
 
-cd origo-app
-
-# Login to Expo account (create one at expo.dev)
-eas login
-
-# Initialize EAS in project
-eas build:configure
-```
-
-### 4B. Create `eas.json`
-```json
-{
-  "cli": { "version": ">= 5.0.0" },
-  "build": {
-    "preview": {
-      "android": {
-        "buildType": "apk"
-      }
-    },
-    "production": {
-      "android": {
-        "buildType": "app-bundle"
-      }
-    }
-  },
-  "submit": {
-    "production": {}
-  }
-}
-```
-
-### 4C. Set app environment variables
-Create `origo-app/.env.production`:
-```
-EXPO_PUBLIC_API_URL=https://your-railway-url.railway.app/v1
-```
-
-### 4D. Build APK (for testing)
-```bash
-cd origo-app
-
-# Internal test APK (download directly)
-eas build --platform android --profile preview
-
-# When done, EAS prints a download URL for the .apk
-```
-
-### 4E. Build for Google Play (AAB)
-```bash
-# Production bundle (AAB for Play Store)
-eas build --platform android --profile production
-```
-
-### 4F. Submit to Google Play
-1. Google Play Console → Create app → `Origo`
-2. Package name: `app.origo.android`
-3. Internal testing → Upload the .aab from EAS
-4. Required before publishing:
-   - Privacy policy URL (host on your website)
-   - App screenshots (minimum 2 phone screenshots)
-   - Feature graphic (1024×500 px)
-   - Short description (80 chars): "Campus-first social app with verified identity & Rizz In 5"
-
-```bash
-# Or use EAS to submit directly:
-eas submit --platform android --profile production
-```
+**This is the step that fails silently.** If skipped, Google sign-in throws a
+console-only error (`[GSI_LOGGER]: The given origin is not allowed`) with
+nothing visible to the user — they just see "Continue with Google" do nothing.
 
 ---
 
-## STEP 5 — Push Notifications (FCM)
+## STEP 5 — End-to-end verification
 
-The backend already sends push via Expo Push API. For production:
-
-1. expo.dev → your project → Credentials → Android → FCM V1 Service Account Key → Upload `google-services.json`
-2. Backend already uses `https://exp.host/--/api/v2/push/send` — no extra setup
-3. Test: Register device, call `POST /v1/users/me/push-token` with Expo push token from app
-
----
-
-## STEP 6 — Production Checklist
-
-Before going live, verify:
+Do this on an actual phone, not just curl, before calling it launched:
 
 ```
-Backend
-[ ] DATABASE_URL points to production Railway PostgreSQL
-[ ] All env vars set in Railway
-[ ] npm run db:migrate ran successfully
-[ ] npm run db:seed ran (interests seeded)
-[ ] /health endpoint returns 200
-[ ] Socket.io connects (test with wscat or Postman)
-[ ] Razorpay webhook configured
-
-Website
-[ ] Vercel deployment successful
-[ ] Custom domain HTTPS working
-[ ] All pages load (/, /features, /about, /download)
-
-App
-[ ] EXPO_PUBLIC_API_URL points to Railway backend
-[ ] google-services.json in project root
-[ ] Push notifications working on real device
-[ ] Razorpay test payment completes successfully
-[ ] EAS build succeeds
-[ ] AAB uploaded to Google Play internal track
+[ ] https://<backend-url>/health returns 200
+[ ] Web app loads at the Vercel URL
+[ ] Google sign-in completes and auto-verifies a BITS test account
+[ ] Interests picker is non-empty (confirms prisma db seed ran)
+[ ] Discover loads without a Dating chip
+[ ] Rizz: start a session, send 2 messages, confirm 3rd is blocked (WAITING)
+[ ] Pulse: create one, respond from a second account, confirm it closes at cap
+[ ] Ship: works with zero prior matches
+[ ] Happening shows real seeded events, not empty
+[ ] Socket.IO connects (open two tabs, send a message, confirm live delivery)
 ```
 
----
-
-## STEP 7 — Monitoring & Logs
-
-### Railway logs
-```bash
-railway logs --tail    # live logs
-```
-
-### Database queries (via Prisma Studio)
-```bash
-cd backend
-npx prisma studio      # opens browser UI at localhost:5555
-```
-
-### Upstash Redis dashboard
-- View key counts, memory usage, latency at console.upstash.com
-
----
-
-## Cost Estimates (MVP stage)
-
-| Service | Plan | Monthly Cost |
-|---|---|---|
-| Railway (backend + DB) | Hobby | ~$5-10 |
-| Upstash Redis | Free | $0 |
-| Vercel (website) | Hobby | $0 |
-| Cloudflare R2 (10GB) | Free | $0 |
-| Expo EAS Build | Free tier (30 builds/mo) | $0 |
-| Resend (3000 emails/mo) | Free | $0 |
-| Razorpay | 2% per transaction | Pay-per-use |
-| **Total** | | **~₹800-1500/month** |
-
-Upgrade path: As users grow, switch to Railway Pro ($20/mo) + dedicated DB.
-
----
-
-## Environment Variable Quick Reference
-
-### Generate secrets (run once):
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-Run this 3 times — one for each of: `JWT_SECRET`, `JWT_REFRESH_SECRET`, `FIELD_ENCRYPTION_KEY`
-
-### Cloudflare R2 as S3-compatible storage:
-Set `AWS_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com` and `AWS_REGION=auto` in addition to normal AWS_* keys.
+If Google sign-in silently does nothing → Step 4.
+If Discover/Rizz/Pulse/Ships all 403 → `requireVerified` failing → check the
+account actually completed OTP or Google auto-verify.
+If `/health` 500s on boot → check Railway logs; almost always a missing or
+malformed env var, and the boot error message names which one.
 
 ---
 
 ## Troubleshooting
 
-| Issue | Fix |
+| Issue | Cause |
 |---|---|
-| `ECONNREFUSED` on DB | Check DATABASE_URL format: `postgresql://user:pass@host:5432/db` |
-| Redis `NOAUTH` | Add password to REDIS_URL: `rediss://:password@host:6379` |
-| Prisma schema not found | Run from `backend/` dir, not root |
-| EAS build fails: no credentials | Run `eas credentials` to generate keystore |
-| App 401 on all requests | Check EXPO_PUBLIC_API_URL ends with `/v1` (no trailing slash) |
-| Push not delivered | Verify FCM service account uploaded to expo.dev credentials |
-| Razorpay signature mismatch | Ensure RAZORPAY_KEY_SECRET matches live/test mode of order |
+| `ECONNREFUSED` / DB times out | Using the *direct* Supabase host, not the pooler. See Step 1A. |
+| Prisma migrate hangs or fails with prepared-statement errors | Migrations ran against `DATABASE_URL` (transaction mode) instead of `DIRECT_URL`. |
+| `postgres: password authentication failed` | Missing the `.kxpqldbwptwcueusohqh` in the pooler username. |
+| Server won't boot, names a missing env var | Intentional — `checkEnv()` fails closed. Set the named var. |
+| Google button does nothing, no error shown to user | Origin not in Google Console's authorised list (Step 4). Check browser console. |
+| CORS error in browser console | `ALLOWED_ORIGINS` on Railway doesn't include the Vercel URL exactly (scheme + host, no trailing slash). |
+| Redis `NOAUTH` / connection refused | Upstash URL must be `rediss://` (TLS), not `redis://`. |
+
+---
+
+## Out of scope for this launch — don't set up
+
+Razorpay live keys, Cloudflare R2, Firebase/FCM push, Android/EAS build. None
+of these are referenced by current backend code, and building them now is
+effort spent on features that are explicitly deferred — see `CLAUDE.md` and
+`docs/BUILD_PLAN.md`'s "explicitly out of scope" list.
