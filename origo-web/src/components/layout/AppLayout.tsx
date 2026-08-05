@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import {
-  Compass, Zap, MessageCircle, Users, User, Bell, LogOut,
-  GraduationCap, Radio, X, Menu, BadgeCheck,
+  Compass, MessageCircle, Bell, LogOut,
+  GraduationCap, X, Menu, BadgeCheck,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useNotificationStore } from '../../store/notificationStore';
@@ -11,24 +11,17 @@ import { authApi } from '../../api/endpoints';
 import Avatar from '../ui/Avatar';
 import OnboardingGuide from '../ui/OnboardingGuide';
 
-// Primary bottom-nav tabs (mobile)
-const BOTTOM_NAV = [
-  { to: '/app/discover',     icon: Compass,       label: 'Discover' },
-  { to: '/app/rizz',         icon: Zap,           label: 'Rizz' },
-  { to: '/app/pulse',        icon: Radio,         label: 'Pulse' },
-  { to: '/app/messages',     icon: MessageCircle, label: 'Messages' },
-  { to: '/app/communities',  icon: Users,         label: 'More' },
-];
-
-// Full sidebar nav (desktop)
-const SIDEBAR_NAV = [
-  { to: '/app/freshers',    icon: GraduationCap, label: 'Freshers HQ', highlight: true },
-  { to: '/app/discover',    icon: Compass,       label: 'Discover' },
-  { to: '/app/rizz',        icon: Zap,           label: 'Rizz In 5' },
-  { to: '/app/messages',    icon: MessageCircle, label: 'Messages' },
-  { to: '/app/communities', icon: Users,         label: 'Communities' },
-  { to: '/app/pulse',       icon: Radio,         label: 'Pulse' },
-  { to: '/app/profile',     icon: User,          label: 'Profile' },
+// Three destinations, each answering one question — see BUILD_PLAN.md 1.5:
+// Campus "what's happening?", People "who's here?", Chats "who am I talking
+// to?". Everything that used to be its own nav slot (Pulse, Rizz sessions,
+// Communities, Senior Connect) is still fully built and routed; it's reached
+// from inside these three now rather than competing for a primary tab.
+// Campus is first and is the default landing tab, deliberately — it's a
+// group-shaped surface, so the app doesn't open on people-browsing.
+const NAV = [
+  { to: '/app/freshers', icon: GraduationCap, label: 'Campus' },
+  { to: '/app/discover', icon: Compass,       label: 'People' },
+  { to: '/app/messages', icon: MessageCircle, label: 'Chats' },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -87,7 +80,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {SIDEBAR_NAV.map(({ to, icon: Icon, label, highlight }) => (
+          {NAV.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -96,17 +89,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                 ${isActive
                   ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                  : highlight
-                    ? 'text-accent hover:bg-accent/10'
-                    : 'text-text-secondary hover:bg-primary/10 hover:text-primary'}`
+                  : 'text-text-secondary hover:bg-primary/10 hover:text-primary'}`
               }
             >
               <Icon size={18} />
               {label}
-              {highlight && (
-                <span className="ml-auto bg-accent/20 text-accent text-[10px] font-semibold rounded-full px-1.5 py-0.5">NEW</span>
-              )}
-              {label === 'Messages' && unread > 0 && (
+              {label === 'Chats' && unread > 0 && (
                 <span className="ml-auto bg-accent text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
                   {unread > 99 ? '99+' : unread}
                 </span>
@@ -162,7 +150,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <nav className="flex-1 px-3 py-4 space-y-1">
-            {SIDEBAR_NAV.map(({ to, icon: Icon, label, highlight }) => (
+            {NAV.map(({ to, icon: Icon, label }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -170,17 +158,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                   ${isActive
                     ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                    : highlight
-                      ? 'text-accent hover:bg-accent/10'
-                      : 'text-text-secondary hover:bg-primary/10 hover:text-primary'}`
+                    : 'text-text-secondary hover:bg-primary/10 hover:text-primary'}`
                 }
               >
                 <Icon size={18} />
                 {label}
-                {highlight && (
-                  <span className="ml-auto bg-accent/20 text-accent text-[10px] font-semibold rounded-full px-1.5 py-0.5">NEW</span>
-                )}
-                {label === 'Messages' && unread > 0 && (
+                {label === 'Chats' && unread > 0 && (
                   <span className="ml-auto bg-accent text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
                     {unread > 99 ? '99+' : unread}
                   </span>
@@ -204,16 +187,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               )}
             </NavLink>
 
-            <div className="flex items-center gap-3 px-3 py-2.5 mt-2">
+            {/* Profile has no primary nav slot in the 3-tab layout — reached
+                from here on desktop, and from the avatar in the mobile header. */}
+            <Link to="/app/profile" className="flex items-center gap-3 px-3 py-2.5 mt-2 rounded-xl hover:bg-primary/10 transition-colors">
               <Avatar src={user?.avatarUrl} name={user?.name ?? 'U'} size={32} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{user?.name}</p>
                 <p className="text-xs text-text-muted truncate">@{user?.username}</p>
               </div>
-              <button onClick={handleLogout} className="text-text-muted hover:text-red-400 transition-colors">
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleLogout(); }}
+                className="text-text-muted hover:text-red-400 transition-colors"
+              >
                 <LogOut size={16} />
               </button>
-            </div>
+            </Link>
           </div>
         </aside>
 
@@ -252,7 +240,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* ── Mobile bottom tab bar ── */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-card/95 backdrop-blur-sm border-t border-border flex items-stretch h-16 safe-bottom">
-        {BOTTOM_NAV.map(({ to, icon: Icon, label }) => (
+        {NAV.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
@@ -265,7 +253,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <>
                 <div className="relative">
                   <Icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
-                  {label === 'Messages' && unread > 0 && (
+                  {label === 'Chats' && unread > 0 && (
                     <span className="absolute -top-1 -right-1 bg-accent text-white text-[8px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">
                       {unread > 9 ? '9+' : unread}
                     </span>

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
-import { MessageCircle, Search } from 'lucide-react';
+import { MessageCircle, Search, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { conversationsApi } from '../../api/endpoints';
 import { useAuthStore } from '../../store/authStore';
@@ -59,9 +59,20 @@ export default function MessagesPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-2 mb-3">
-          <MessageCircle size={20} className="text-primary" />
-          <h1 className="text-xl font-bold text-text-primary">Messages</h1>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <MessageCircle size={20} className="text-primary" />
+            <h1 className="text-xl font-bold text-text-primary">Chats</h1>
+          </div>
+          {/* Rizz sessions no longer have their own nav slot in the 3-tab
+              layout — reached from here, since a pending Rizz becomes a
+              conversation the moment it unlocks. */}
+          <Link
+            to="/app/rizz"
+            className="flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 border border-primary/30 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors"
+          >
+            <Zap size={13} /> Rizz sessions
+          </Link>
         </div>
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />

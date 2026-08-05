@@ -5,12 +5,16 @@ import { useFreshersStore } from '../../store/freshersStore';
 import { QUESTS } from '../../lib/freshers/content';
 import HappeningCarousel from '../../components/happening/HappeningCarousel';
 
+// Batch Space and We Met dropped: Batch Space is cut entirely (decisions/0003
+// — the route no longer exists, so this was previously a dead link), We Met
+// is explicitly out of scope for this launch (BUILD_PLAN.md 1.6, camera
+// scanning needs a native app). Both hidden, not deleted from the backend —
+// they come back when there's a real home for them.
 const QUICK_LINKS = [
   { to: '/app/intro-card', emoji: '🎴', title: 'Intro Card', desc: 'Make a shareable card' },
-  { to: '/app/batch', emoji: '🎓', title: 'Batch Space', desc: 'Meet your batch early' },
+  { to: '/app/pulse', emoji: '📡', title: 'Pulse', desc: 'Who\'s around right now' },
   { to: '/app/prom', emoji: '💃', title: 'Prom Radar', desc: 'Find your Freshers’ Night crew' },
   { to: '/app/seniors', emoji: '🧭', title: 'Senior Connect', desc: 'Ask someone who’s been there' },
-  { to: '/app/met', emoji: '🤝', title: 'We Met', desc: 'Reconnect with people you meet' },
   { to: '/app/communities', emoji: '🏘️', title: 'Communities', desc: 'Find your people' },
 ];
 

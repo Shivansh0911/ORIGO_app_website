@@ -72,9 +72,14 @@ export default function RizzPage() {
   return (
     <div className="flex flex-col h-full">
       <div className="px-6 py-4 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Zap size={20} className="text-primary" />
-          <h1 className="text-xl font-bold text-text-primary">Rizz In 5</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap size={20} className="text-primary" />
+            <h1 className="text-xl font-bold text-text-primary">Rizz In 5</h1>
+          </div>
+          <Link to="/app/messages" className="text-xs text-text-muted hover:text-primary transition-colors">
+            ← Chats
+          </Link>
         </div>
         <p className="text-text-muted text-sm mt-0.5">5 messages to make your first impression</p>
       </div>

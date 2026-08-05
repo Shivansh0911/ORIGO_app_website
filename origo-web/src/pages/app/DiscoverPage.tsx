@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, X, Zap, GraduationCap, Sparkles, ChevronDown } from 'lucide-react';
@@ -342,6 +342,14 @@ export default function DiscoverPage() {
             </div>
             <p className="text-text-muted text-sm mt-1">Ranked for you · {INTENTS.find((i) => i.key === intent)?.label}</p>
           </div>
+          {/* Ship has no primary nav slot in the 3-tab layout — belongs here,
+              in People, alongside Discover rather than competing for a tab. */}
+          <Link
+            to="/app/ship"
+            className="flex items-center gap-1.5 text-xs font-semibold text-accent bg-accent/10 border border-accent/30 px-3 py-1.5 rounded-full hover:bg-accent/20 transition-colors shrink-0"
+          >
+            <Heart size={13} /> Ship a Friend
+          </Link>
         </div>
         {/* Intent selector — each intent uses a different scoring profile */}
         <div className="flex gap-2 overflow-x-auto pb-1">
