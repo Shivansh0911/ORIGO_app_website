@@ -180,6 +180,26 @@ export async function renderIntroCard(data: IntroCardData): Promise<{ canvas: HT
   ctx.restore();
 
   const fontFamily = 'Poppins, Inter, system-ui, sans-serif';
+  // Fraunces carries the one hero prompt — a warm, high-personality serif
+  // italic set against Poppins' geometric sans, so the card has a real focal
+  // point instead of every text element using the same typeface.
+  const quoteFontFamily = 'Fraunces, Georgia, serif';
+
+  // ctx.font does not trigger a font load — an unrequested weight/style
+  // silently falls back to the platform default with no error. This is why
+  // every italic prompt was rendering in a generic system italic before this
+  // fix: index.html never loaded an italic Poppins weight, so "italic 500
+  // Poppins" resolved to whatever the OS default italic happens to be.
+  await Promise.all([
+    document.fonts.load(`700 92px Poppins`),
+    document.fonts.load(`600 40px Poppins`),
+    document.fonts.load(`500 38px Poppins`),
+    document.fonts.load(`400 34px Poppins`),
+    document.fonts.load(`600 26px Poppins`),
+    document.fonts.load(`italic 500 40px Poppins`),
+    document.fonts.load(`italic 600 56px ${quoteFontFamily}`),
+    document.fonts.load(`italic 500 140px ${quoteFontFamily}`),
+  ]).catch(() => { /* best-effort — draw proceeds with whatever loaded */ });
 
   // Eyebrow
   ctx.fillStyle = subInk;
@@ -283,63 +303,89 @@ export async function renderIntroCard(data: IntroCardData): Promise<{ canvas: HT
   }
   y += chipH + px(34);
 
-  // Prompt cards — the part people actually read, so they get the space and
-  // the weight. Each is its own panel so three answers scan as three distinct
-  // thoughts rather than a paragraph. Shortest-first, so the most card-friendly
-  // answers win the room when not all of them fit.
+  // Prompts — one hero pull-quote plus compact supporting lines, rather than
+  // three identical boxes. A single strong focal point reads as designed;
+  // three equal-weight panels reads as a form. Shortest-first so the most
+  // card-friendly answer becomes the hero and wins the most generous layout.
   const boxX = pad, boxW = w - pad * 2;
-  // Chrome kept tight on purpose: generous padding looks better on one card
-  // but costs a whole prompt slot, and three thoughts beat one roomy one.
-  const lineH = px(50);
-  const boxPadTop = px(28), boxPadBottom = px(26), labelGap = px(38);
-  const boxChrome = boxPadTop + labelGap + boxPadBottom;
-  const gap = px(20);
+  const gap = px(26);
+  const heroFontPx = story ? 54 : 42;
+  const heroLineH = px(story ? 66 : 52);
+  const heroMaxLines = story ? 3 : 2;
+  const pillH = px(64);
 
   const ordered = [...data.prompts]
     .filter((p) => p.answer.trim())
-    .sort((a, b) => a.answer.length - b.answer.length)
-    .slice(0, story ? 3 : 2);
+    .sort((a, b) => a.answer.length - b.answer.length);
+  const hero = ordered[0];
+  const secondary = ordered.slice(1, story ? 3 : 2);
 
-  // Distribute leftover vertical room *before* the prompts rather than leaving
-  // a dead gap above the footer — a story card that stops two-thirds down
-  // reads as unfinished, which is fatal for something meant to be posted.
-  if (ordered.length > 0) {
-    ctx.font = `italic 500 ${px(44)}px ${fontFamily}`;
-    const projected = ordered.reduce((sum, p) => {
-      const lines = wrapLines(ctx, p.answer, boxW - px(72), 2);
-      return sum + boxChrome + lines.length * lineH + gap;
-    }, 0);
-    const slack = contentLimit - y - projected;
-    if (slack > 0) y += Math.min(slack * 0.6, px(60));
+  // Predict the block's total height before drawing anything, so leftover
+  // room can be pushed in *above* it as breathing space instead of leaking
+  // out as a dead gap over the footer. This is what makes a 1-prompt card
+  // (the common case — most people fill in one before they fill in three)
+  // look intentional rather than sparse.
+  if (hero || secondary.length > 0) {
+    let predicted = 0;
+    if (hero) {
+      ctx.font = `italic 600 ${px(heroFontPx)}px ${quoteFontFamily}`;
+      const lines = wrapLines(ctx, hero.answer, boxW - px(30), heroMaxLines).length;
+      predicted += px(78) + (lines - 1) * heroLineH + px(6) + px(30) + gap + px(10);
+    }
+    predicted += secondary.length * (pillH + px(14));
+    const slack = contentLimit - y - predicted;
+    if (slack > 0) y += Math.min(slack * 0.7, px(140));
   }
 
-  for (const prompt of ordered) {
-    if (contentLimit - y < boxChrome + lineH) break;
+  if (hero) {
+    // Decorative opening-quote glyph, low-opacity, sitting behind the text as
+    // a pull-quote flourish rather than framed in its own box.
+    ctx.save();
+    ctx.globalAlpha = 0.32;
+    ctx.fillStyle = ink;
+    ctx.font = `italic 500 ${px(150)}px ${quoteFontFamily}`;
+    ctx.fillText('“', boxX - px(14), y + px(96));
+    ctx.restore();
 
-    ctx.font = `italic 500 ${px(44)}px ${fontFamily}`;
-    // Square only has room for one prompt, so let that one breathe across more
-    // lines — a single short box floating above a large gap looks unfinished.
-    const roomForLines = Math.floor((contentLimit - y - boxChrome) / lineH);
-    const maxLines = Math.max(1, Math.min(story ? 2 : 3, roomForLines));
-    const answerLines = wrapLines(ctx, prompt.answer, boxW - px(72), maxLines);
-    const boxH = boxChrome + answerLines.length * lineH;
+    ctx.font = `italic 600 ${px(heroFontPx)}px ${quoteFontFamily}`;
+    const heroLines = wrapLines(ctx, hero.answer, boxW - px(30), heroMaxLines);
+
+    let ty = y + px(78);
+    ctx.fillStyle = ink;
+    for (const line of heroLines) { ctx.fillText(line, boxX + px(48), ty); ty += heroLineH; }
+
+    ty += px(6);
+    ctx.fillStyle = subInk;
+    ctx.font = `600 ${px(24)}px ${fontFamily}`;
+    ctx.letterSpacing = `${px(2)}px`;
+    ctx.fillText(`— ${hero.label.toUpperCase()}`, boxX + px(48), ty);
+    ctx.letterSpacing = '0px';
+
+    y = ty + gap + px(10);
+  }
+
+  // Secondary prompts: compact single-line pills — "LABEL · answer" — clearly
+  // supporting cast next to the hero rather than competing with it.
+  for (const prompt of secondary) {
+    if (contentLimit - y < pillH) break;
 
     ctx.fillStyle = chipBg;
-    roundRect(ctx, boxX, y, boxW, boxH, px(30));
+    roundRect(ctx, boxX, y, boxW, pillH, pillH / 2);
     ctx.fill();
 
-    let ty = y + boxPadTop + px(18);
     ctx.fillStyle = subInk;
-    ctx.font = `600 ${px(26)}px ${fontFamily}`;
-    ctx.letterSpacing = `${px(2)}px`;
-    ctx.fillText(prompt.label.toUpperCase(), boxX + px(36), ty);
-    ctx.letterSpacing = '0px';
-    ty += labelGap;
-    ctx.fillStyle = ink;
-    ctx.font = `italic 500 ${px(44)}px ${fontFamily}`;
-    for (const line of answerLines) { ctx.fillText(line, boxX + px(36), ty); ty += lineH; }
+    ctx.font = `600 ${px(24)}px ${fontFamily}`;
+    const labelText = prompt.label.toUpperCase();
+    ctx.fillText(labelText, boxX + px(30), y + px(40));
+    const labelW = ctx.measureText(labelText).width;
 
-    y += boxH + gap;
+    ctx.fillStyle = ink;
+    ctx.font = `italic 500 ${px(30)}px ${fontFamily}`;
+    const answerX = boxX + px(30) + labelW + px(16);
+    const [answerLine] = wrapLines(ctx, prompt.answer, boxW - px(60) - labelW - px(16), 1);
+    ctx.fillText(answerLine ?? '', answerX, y + px(40));
+
+    y += pillH + px(14);
   }
 
   // Footer: QR + "Made with Origo"
