@@ -154,21 +154,40 @@ Done 2026-07-29 — campus-wide eligibility, `allowShipsFrom` enforced, daily ca
 Closes B4. Extended 2026-07-29 by Shivansh with block-checks across all three
 parties and clearer error handling — same shape, no conflict.
 
-### 1.5 ⬜ Tab restructure → 3 tabs
-Each tab answers exactly one question:
+### 1.5 ✅ Tab restructure → 3 tabs
+Done 2026-08-05. Seven nav slots collapsed to three, each answering one
+question:
 
 | Tab | Question it answers | Contains |
 |---|---|---|
-| **Campus** | *What's happening?* | Happening (events) · Pulse (right now) |
-| **People** | *Who's here?* | Discover w/ context clusters · Ship a Friend |
+| **Campus** | *What's happening?* | Happening (events) · Pulse · Quests · Communities · Senior Connect |
+| **People** | *Who's here?* | Discover · Ship a Friend |
 | **Chats** | *Who am I talking to?* | Rizz sessions · conversations |
 
-Campus is the default landing tab — a group-shaped surface first, so the app
-doesn't read as a people-browsing product on open.
+Campus is the default landing tab (`/app/freshers`) — a group-shaped surface
+first, so the app doesn't read as a people-browsing product on open. Nothing
+lost its route; Pulse/Rizz/Ship/Profile are cross-linked from inside the tab
+that now hosts them instead of holding their own primary nav slot. Profile
+moved to the avatar (mobile header, desktop sidebar footer) rather than a tab.
 
-### 1.6 ⬜ Hide out-of-scope surfaces behind a flag
-We Met, Quests, Premium, Boost, Sticker/Rizz/ViewShips, Freshers HQ hub.
-Hide — do not delete. Empty surfaces are the main cause of "this app is dead."
+Found and fixed while touching Campus's quick-links: a dead `/app/batch` link
+(Batch Space was deleted earlier this session; this reference was missed) and
+a `/app/met` (We Met) link, which is out of scope — see 1.6. Both removed.
+
+### 1.6 🟨 Hide out-of-scope surfaces behind a flag
+Revised list, decided 2026-08-05 — **Quests stays** (it drives exactly the
+onboarding actions we need this week: profile, Intro Card, communities) and
+**Freshers HQ hub can't be hidden, it's now the Campus tab** (1.5). Hide —
+do not delete. Empty surfaces are the main cause of "this app is dead."
+
+- ✅ **Premium** — the only actual entry point anywhere in the frontend (a
+  button on ProfilePage) removed. Route/page untouched, just not promoted.
+- ✅ **Boost, Sticker Pack, Rizz Pack, See Who Shipped You** — checked; none
+  of the four have ever had any frontend reference at all (grepped for
+  their route/service symbols across origo-web). Nothing to hide — they
+  were never wired to a UI in the first place.
+- ⬜ **We Met** — dead link into it already removed from Campus's quick
+  links (1.5), but the route/page itself still exists and isn't guarded.
 
 ### 1.7 ✅ Discover: interim de-dating (do now, ahead of the full rewrite)
 
