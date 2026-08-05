@@ -19,6 +19,7 @@ export const AuthController = {
               interest: true,
             },
           },
+          prompts: { orderBy: { position: 'asc' } },
         },
       });
       const { passwordHash, dateOfBirth, phone, collegeEmail, collegeEmailHash, firebaseUid, pushToken, ...safeUser } = fullUser!;
@@ -46,6 +47,7 @@ export const AuthController = {
               interest: true,
             },
           },
+          prompts: { orderBy: { position: 'asc' } },
         },
       });
       const { passwordHash, dateOfBirth, phone, collegeEmail, collegeEmailHash, firebaseUid, pushToken, ...safeUser } = fullUser!;
@@ -109,7 +111,10 @@ export const AuthController = {
       );
       const fullUser = await prisma.user.findUnique({
         where: { id: rawUser.id },
-        include: { interests: { include: { interest: true } } },
+        include: {
+          interests: { include: { interest: true } },
+          prompts: { orderBy: { position: 'asc' } },
+        },
       });
       const { passwordHash, dateOfBirth, phone, collegeEmail, collegeEmailHash, firebaseUid, pushToken, ...safeUser } = fullUser!;
       res.json({ ...tokens, user: { ...safeUser, needsDob: !dateOfBirth } });

@@ -15,6 +15,7 @@ const APP_ORIGIN = typeof window !== 'undefined' ? window.location.origin : 'htt
 
 export default function IntroCardPage() {
   const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const completeQuest = useFreshersStore((s) => s.completeQuest);
 
   // `branch` is a short, user-editable field (persisted to the profile) —
@@ -72,9 +73,16 @@ export default function IntroCardPage() {
     const t = setTimeout(() => {
       const changed = branch !== (user.branch ?? '') || hometown !== (user.hometown ?? '');
       if (!changed) return;
-      usersApi.updateMe({ branch: branch || undefined, hometown: hometown || undefined }).catch(() => {
-        // Best-effort — the card itself doesn't depend on this succeeding.
-      });
+      usersApi.updateMe({ branch: branch || undefined, hometown: hometown || undefined })
+        // Sync the auth store on success — without this, the rest of the app
+        // (Profile, Discover's own-viewer context) kept reading the stale
+        // pre-edit values until the next login, because nothing re-fetched
+        // the user. Found live: saved a prompt, Profile still showed the
+        // "add a prompt" empty state in the same session.
+        .then(({ data }) => setUser({ ...user, ...data }))
+        .catch(() => {
+          // Best-effort — the card itself doesn't depend on this succeeding.
+        });
     }, 800);
     return () => clearTimeout(t);
   }, [user, branch, hometown]);
@@ -88,9 +96,11 @@ export default function IntroCardPage() {
     const next = filled.map((p) => `${p.label}|${p.answer}`).join('~');
     if (existing === next) return;
     const t = setTimeout(() => {
-      usersApi.updatePrompts(filled).catch(() => {
-        // Best-effort; the card renders from local state regardless.
-      });
+      usersApi.updatePrompts(filled)
+        .then(({ data }) => setUser({ ...user, prompts: data }))
+        .catch(() => {
+          // Best-effort; the card renders from local state regardless.
+        });
     }, 900);
     return () => clearTimeout(t);
   }, [user, prompts]);
