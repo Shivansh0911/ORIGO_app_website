@@ -4,7 +4,12 @@
 decisions are made. If this contradicts another doc, this wins for *sequencing*;
 `decisions/` wins for *reasoning*.
 
-- **Campus opens:** Aug 1, 2026 · freshers arriving from ~Jul 30
+- **Campus opened:** Aug 1, 2026 — **freshers have now been on campus a week
+  (confirmed by Aryan, 2026-08-06) and the app is still not deployed.** The
+  Phase 2 arrival-week plan below (QR posters, orientation-stall ops,
+  "meet your batch before day one" framing) was written for a window that has
+  already closed. Needs a deliberate decision on what launch looks like now,
+  not a silent rewrite — see the note at the top of Phase 2.
 - **Prom:** ~Aug 23 or Aug 29 (all-campus) — date TBC
 - **Currently deployed:** nothing
 
@@ -216,10 +221,11 @@ from the rewrite —
 - This is throwaway UI churn once 1.1 lands, and that's fine — it's ten minutes
   against a real positioning risk for the gap in between.
 
-### 1.8 ⬜ Manual verification approval
-Fallback for the first week if a fresher's college email isn't issued yet.
-Admin-only endpoint to approve a pending user + a minimal list UI. Student-ID
-upload already exists (`uploadStudentId`, private Supabase bucket).
+### 1.8 ❄️ ~~Manual verification approval~~ — not needed
+Confirmed 2026-08-06 by Aryan: every fresher already has their BITS email
+issued (the "arrives without one yet" gap this was hedging against never
+materialized). Google Workspace + OTP cover verification on their own.
+`uploadStudentId`/private-bucket plumbing stays as-is, unused for now.
 
 ### 1.9a ✅ Pulse — author-set response cap
 Done 2026-07-29 — `maxResponses` on creation, enforced on response, status
@@ -324,15 +330,30 @@ const m = /^([fhp])(\d{4})(\d{4})$/i.exec(localPart);
 
 ---
 
-## Phase 2 — Arrival week · **Aug 1 → 6**
+## Phase 2 — Arrival week · **Aug 1 → 6** ⚠️ **this window has already passed**
+
+Written for orientation week. Confirmed 2026-08-06: freshers have been on
+campus a week and the app still isn't deployed, so the "meet your batch
+before day one" framing, the orientation-stall ops in 2.5, and any tie-in
+to the physical orientation event no longer apply as written. The tasks
+below (QR posters, attribution links, the concentration metric) are still
+correct mechanics — they just need a **new occasion**, not a rewrite of the
+mechanism itself. Two honest options, not yet decided:
+
+- **Late-launch as-is** — deploy now, run the same growth loop (Intro Cards →
+  batch WhatsApp groups) without the orientation-specific hook. Freshers are
+  still finding their people this week; "before day one" becomes "this week."
+- **Anchor to the next real moment** — Prom Radar is already the Phase 4
+  retention play landing on the week-3/4 churn cliff; launching *as* the Prom
+  build rather than before it is a real alternative, not a fallback.
 
 | # | Task |
 |---|---|
-| 2.1 ⬜ | QR posters, one distinct `?src=` per location (hostel-d, mess-a, admin-block, orientation-stall) |
+| 2.1 ⬜ | QR posters, one distinct `?src=` per location (hostel-d, mess-a, admin-block — orientation-stall no longer applies) |
 | 2.2 ⬜ | QR landing page must be **public** — a scan that hits a login wall converts terribly |
 | 2.3 ⬜ | Intro Card: `?src=introcard&by=<username>` for viral attribution + a copy-paste caption |
 | 2.4 ⬜ | Watch the concentration metric daily; tune `K` / outbound budget |
-| 2.5 ⬜ | Ops: seed real events, recruit ~10 seniors, staff the orientation stall |
+| 2.5 ⬜ | Ops: seed real events, recruit ~10 seniors — **orientation stall itself is moot, drop or replace** |
 
 ---
 
