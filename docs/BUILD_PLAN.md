@@ -270,10 +270,27 @@ visible evidence of abandonment.
 > name at some point so local testing reflects reality — not urgent, but it
 > will confuse whoever debugs "why is Discover empty for my test account" next.
 
-### 1.10 ⬜ Persist `joiningYear`, `degreeType`, `branch`, `hometown` on `User`
-`IntroCardPage` collects branch/batch/hometown and throws them all away (local
-state only). These are the strongest cold-start signals for matching **and** they
-power the Discover context rows (1.1).
+### 1.10 ✅ Persist `joiningYear`, `degreeType`, `branch`, `hometown` on `User`
+Done 2026-07-30. Verified live against the local stack: `f20230141@...` on
+either the Google Workspace or OTP path correctly derives `joiningYear: 2023`,
+`degreeType: 'f'`; direct attempts to set `joiningYear` via `PATCH /users/me`
+are silently ignored (SEC-16 field-picking holds). `branch`/`hometown` persist
+via the Intro Card composer.
+
+Extended 2026-08-05 with a `UserPrompt` table (up to 3 prompts/profile,
+`label` fixed-set + free-text `answer`, moderated) — same cold-start-signal
+argument as branch/hometown applies to prompts, more so. Wired into: the Intro
+Card (now up to 3 prompts, one hero pull-quote treatment + compact secondary
+pills — see `origo-web/src/lib/introCard.ts`), the Profile page (full-length
+display), and Discover — reacting to a candidate's prompt starts a Rizz
+session with the opener pre-filled quoting what they wrote, so a cold opener
+can't be "hey" (closes part of 1.3a's "openers seeded from prompt reactions",
+without waiting on the full 1.1 rewrite).
+
+`IntroCardPage` previously collected branch/batch/hometown and prompts and
+threw them all away (local state only, never sent to the backend). These are
+the strongest cold-start signals for matching **and** they power the Discover
+context rows (1.1).
 
 **Derive batch + degree from the verified college email — never self-report.**
 BITS IDs encode both:
@@ -428,14 +445,13 @@ caught by typecheck or tests.
 
 ## Open questions
 
-1. Prom date confirmation (Aug 23 vs 29) — sets the Phase 4 deadline.
-2. Do `h` (higher degree) and `p` (PhD) students belong in the same discovery
-   pool as first-degree students, or should `degreeType` filter the default view?
-   Now that we can derive it reliably, it's a product call worth making
-   deliberately rather than by default.
-3. Which prompts ship at launch? Needs ~8 written, each with 2–3 suggested
-   answers so the field is never blank. These carry the profile, the Intro Card,
-   and the Rizz opener — worth writing carefully rather than generating.
+1. Prom date confirmation (Aug 23 vs 29) — sets the Phase 4 deadline. **Still
+   TBC per Aryan** (not yet officially announced by campus).
+2. ~~Do `h`/`p` students belong in the same discovery pool as first-degree?~~
+   **Resolved 2026-08-05: one pool, everyone together.**
+3. ~~Which prompts ship at launch?~~ **Resolved 2026-08-05** — 8 written with
+   2–3 suggested answers each, in `origo-web/src/lib/freshers/content.ts`.
+   Still worth Aryan's read for campus-vernacular accuracy, not blocking.
 
 ## Explicitly out of scope for launch
 
